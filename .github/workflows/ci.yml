@@ -75,6 +75,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for proper diff analysis
       
     - name: Run security scan on shell scripts
       run: |
@@ -89,8 +91,8 @@ jobs:
       uses: trufflesecurity/trufflehog@main
       with:
         path: ./
-        base: main
-        head: HEAD
+        base: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}
+        head: ${{ github.sha }}
 
   documentation:
     runs-on: ubuntu-latest
