@@ -225,6 +225,17 @@ create_directories() {
 setup_local_registry() {
     print_status "Setting up local OCI registry..."
     
+    # Check Docker daemon status
+    if ! docker info >/dev/null 2>&1; then
+        print_error "Docker daemon is not running or accessible"
+        exit 1
+    fi
+    
+    # Check if port 5001 is available
+    if netstat -tuln 2>/dev/null | grep -q ":5001 "; then
+        print_warning "Port 5001 appears to be in use"
+    fi
+    
     # Check if registry container is already running
     if docker ps --format '{{.Names}}' | grep -q "^local-registry$"; then
         print_success "Local registry is already running"
@@ -237,19 +248,34 @@ setup_local_registry() {
     fi
     
     # Start new registry and log output
+    print_status "Starting Docker registry container..."
     docker run -d \
         --name local-registry \
         --restart=always \
         -p 5001:5000 \
         registry:2 >/tmp/local-registry.log 2>&1
 
+    # Show Docker container startup logs
+    echo "Docker registry startup logs:"
     cat /tmp/local-registry.log
     
-    # Wait for registry to be ready (increase wait to 60 seconds)
-    for i in {1..60}; do
+    # Check if container is running
+    if ! docker ps --format '{{.Names}}' | grep -q "^local-registry$"; then
+        print_error "Registry container failed to start"
+        docker logs local-registry || true
+        exit 1
+    fi
+    
+    # Wait for registry to be ready (increase wait to 120 seconds)
+    print_status "Waiting for registry to be ready (timeout: 120 seconds)..."
+    for i in {1..120}; do
         if curl -f http://localhost:5001/v2/ >/dev/null 2>&1; then
             print_success "Local registry is running on http://localhost:5001 (ready after ${i} seconds)"
             return 0
+        fi
+        # Show progress every 10 seconds
+        if (( i % 10 == 0 )); then
+            print_status "Still waiting for registry... (${i}/120 seconds)"
         fi
         sleep 1
     done
