@@ -174,25 +174,29 @@ ocm add resources k8s-component k8s-app/deployment.yaml \
   --name deployment \
   --type kubernetesManifest \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath k8s-app/deployment.yaml
 
 ocm add resources k8s-component k8s-app/service.yaml \
   --name service \
   --type kubernetesManifest \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath k8s-app/service.yaml
 
 ocm add resources k8s-component k8s-app/configmap.yaml \
   --name configmap \
   --type kubernetesManifest \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath k8s-app/configmap.yaml
 
 ocm add resources k8s-component k8s-app/ingress.yaml \
   --name ingress \
   --type kubernetesManifest \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath k8s-app/ingress.yaml
 
 echo "✅ OCM component created with K8s manifests"
 
