@@ -15,12 +15,18 @@
 - **Solution**: Updated to `ocm add references --name` in advanced examples
 - **Impact**: Ensures compatibility with modern OCM CLI versions
 
+### ✅ TruffleHog Security Scan Issues
+- **Problem**: TruffleHog CI job failing with "BASE and HEAD commits are the same" error
+- **Solution**: Updated CI workflow to use proper commit references with fallback logic
+- **Impact**: Resolves GitHub Actions security scan failures
+
 ## Validation Summary
 
 | Category | Status | Issues Found | Issues Fixed |
 |----------|--------|--------------|--------------|
 | **File Permissions** | ✅ Complete | 1 | 1 |
 | **OCM CLI Syntax** | ✅ Complete | 1 | 1 |
+| **TruffleHog Security** | ✅ Complete | 1 | 1 |
 | **Port Conflicts** | ✅ Complete | 5 | 5 |
 | **Syntax Errors** | ✅ Complete | 3 | 3 |
 | **Missing Content** | ✅ Complete | 2 | 2 |
@@ -32,6 +38,12 @@
 The following critical fixes have been committed to resolve CI failures:
 
 ```bash
+commit e314efa - Fix TruffleHog security scan in CI workflow
+- Fix base/head commit issue causing TruffleHog to exit with error
+- Add fetch-depth: 0 to ensure full git history is available
+- Use conditional logic to handle both push and pull_request events
+- Resolves the 'BASE and HEAD commits are the same' error
+
 commit 2d6bea2 - Fix CI failures: make deploy.sh executable and update OCM CLI syntax
 - Fix file permissions: make deploy.sh executable (chmod +x)  
 - Fix OCM CLI syntax: change 'ocm add componentversions' to 'ocm add references'
@@ -44,8 +56,9 @@ With these fixes in place, the GitHub Actions CI should now:
 
 1. ✅ **Pass file permission checks** - All scripts are properly executable
 2. ✅ **Pass OCM CLI syntax validation** - All commands use current syntax
-3. ✅ **Execute script validation** - Scripts can run without permission errors
-4. ✅ **Validate repository structure** - All examples have complete content
+3. ✅ **Pass security scans** - TruffleHog configured with proper commit references
+4. ✅ **Execute script validation** - Scripts can run without permission errors
+5. ✅ **Validate repository structure** - All examples have complete content
 
 ## Repository State
 
