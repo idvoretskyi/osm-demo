@@ -39,12 +39,6 @@ The Open Component Model (OCM) is an open standard for describing software bill 
    ./run-examples.sh
    ```
 
-3. **Start with basic examples:**
-   ```bash
-   cd examples/01-basic
-   ./run-examples.sh
-   ```
-
 4. **Explore component transport:**
    ```bash
    cd examples/02-transport/local-to-oci
@@ -119,7 +113,7 @@ graph TD
 
 ## 📁 Repository Structure
 
-```
+```text
 osm-demo/
 ├── scripts/              # Setup and utility scripts
 │   ├── setup-environment.sh    # Automated environment setup
@@ -137,11 +131,9 @@ osm-demo/
 │   └── 04-k8s-deployment/ # Kubernetes deployment patterns
 │       ├── setup-cluster.sh     # Kind cluster setup
 │       └── ocm-k8s-toolkit/     # OCM K8s integration example
-└── docs/                 # Additional documentation
-```
+├── docs/                 # Additional documentation
 │   └── 05-advanced/   # Advanced scenarios
-├── docs/             # Additional documentation
-└── infrastructure/   # Local infrastructure setup
+├── infrastructure/   # Local infrastructure setup
 ```
 
 ## 🧩 Examples Overview
@@ -276,7 +268,7 @@ The test suite is designed for CI/CD environments:
 
 This playground demonstrates integration with:
 
-- **[OCM CLI](https://ocm.software/)** - Core OCM tooling
+- **[OCM CLI](https://ocm.software/docs/getting-started/installation/)** - Core OCM tooling
 - **[OCM K8s Toolkit](https://github.com/open-component-model/ocm-k8s-toolkit)** - Kubernetes controllers
 - **[Kro](https://kro.run/)** - Resource orchestration
 - **[FluxCD](https://fluxcd.io/)** - GitOps delivery
