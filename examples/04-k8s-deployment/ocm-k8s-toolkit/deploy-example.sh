@@ -170,28 +170,28 @@ ocm create componentarchive github.com/ocm-demo/k8s-app v1.0.0 \
   --file k8s-component
 
 # Add all manifests as resources
-ocm add resources k8s-component k8s-app/deployment.yaml \
+ocm add resources k8s-component \
   --name deployment \
   --type kubernetesManifest \
   --version v1.0.0 \
   --inputType file \
   --inputPath k8s-app/deployment.yaml
 
-ocm add resources k8s-component k8s-app/service.yaml \
+ocm add resources k8s-component \
   --name service \
   --type kubernetesManifest \
   --version v1.0.0 \
   --inputType file \
   --inputPath k8s-app/service.yaml
 
-ocm add resources k8s-component k8s-app/configmap.yaml \
+ocm add resources k8s-component \
   --name configmap \
   --type kubernetesManifest \
   --version v1.0.0 \
   --inputType file \
   --inputPath k8s-app/configmap.yaml
 
-ocm add resources k8s-component k8s-app/ingress.yaml \
+ocm add resources k8s-component \
   --name ingress \
   --type kubernetesManifest \
   --version v1.0.0 \
