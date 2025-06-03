@@ -50,9 +50,9 @@ log_test() {
 }
 
 # Enhanced test result tracking
-declare -A test_results
-declare -A test_errors
-declare -A test_durations
+declare -A test_results=()
+declare -A test_errors=()
+declare -A test_durations=()
 
 # Test runner function with enhanced error handling
 run_test() {
@@ -472,16 +472,18 @@ print_detailed_summary() {
     echo
     
     # Individual test results
-    if [[ ${#test_results[@]} -gt 0 ]]; then
+    if [[ ${#test_results[@]:-0} -gt 0 ]]; then
         echo -e "📋 ${BLUE}Individual Test Results:${NC}"
         
         # Sort tests by name for consistent output
         local sorted_tests=()
-        while IFS= read -r -d '' test_name; do
-            sorted_tests+=("$test_name")
-        done < <(printf '%s\0' "${!test_results[@]}" | sort -z)
+        if [[ ${#test_results[@]:-0} -gt 0 ]]; then
+            while IFS= read -r -d '' test_name; do
+                sorted_tests+=("$test_name")
+            done < <(printf '%s\0' "${!test_results[@]}" | sort -z)
+        fi
         
-        for test_name in "${sorted_tests[@]}"; do
+        for test_name in "${sorted_tests[@]:-}"; do
             local result="${test_results[$test_name]}"
             local duration="${test_durations[$test_name]:-N/A}"
             
@@ -502,7 +504,7 @@ print_detailed_summary() {
         echo -e "🔍 ${RED}Failed Tests Summary:${NC}"
         local failed_count=0
         
-        for test_name in "${!test_results[@]}"; do
+        for test_name in "${!test_results[@]:-}"; do
             if [[ "${test_results[$test_name]}" == "FAILED" ]]; then
                 failed_count=$((failed_count + 1))
                 echo -e "   ${RED}$failed_count. $test_name${NC}"
