@@ -16,7 +16,7 @@ The Open Component Model (OCM) is an open standard for describing software bill 
 - Docker and Docker Compose
 - [kind](https://kind.sigs.k8s.io/) for local Kubernetes clusters
 - [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
-- [OCM CLI](https://ocm.software/docs/getting-started/installing-the-ocm-cli/)
+- [OCM CLI](https://ocm.software/docs/getting-started/installation/)
 - [Flux CLI](https://fluxcd.io/flux/installation/) (for Kubernetes examples)
 
 ## 🚀 Quick Start
