@@ -472,12 +472,12 @@ print_detailed_summary() {
     echo
     
     # Individual test results
-    if [[ ${#test_results[@]:-0} -gt 0 ]]; then
+    if [[ ${#test_results[@]} -gt 0 ]]; then
         echo -e "📋 ${BLUE}Individual Test Results:${NC}"
         
         # Sort tests by name for consistent output
         local sorted_tests=()
-        if [[ ${#test_results[@]:-0} -gt 0 ]]; then
+        if [[ ${#test_results[@]} -gt 0 ]]; then
             while IFS= read -r -d '' test_name; do
                 sorted_tests+=("$test_name")
             done < <(printf '%s\0' "${!test_results[@]}" | sort -z)
