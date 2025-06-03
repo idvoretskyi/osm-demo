@@ -40,6 +40,11 @@ jobs:
         # Install Flux
         curl -s https://fluxcd.io/install.sh | sudo bash
         
+    - name: Fix script permissions
+      run: |
+        # Make all shell scripts executable
+        find . -name "*.sh" -type f -exec chmod +x {} \;
+        
     - name: Set up environment
       run: |
         ./scripts/setup-environment.sh
