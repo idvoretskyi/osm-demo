@@ -53,13 +53,13 @@ nodes:
         node-labels: "ingress-ready=true"
   extraPortMappings:
   - containerPort: 80
-    hostPort: 80
+    hostPort: 8080
     protocol: TCP
   - containerPort: 443
-    hostPort: 443
+    hostPort: 8443
     protocol: TCP
   - containerPort: 5000
-    hostPort: 5000
+    hostPort: 5004
     protocol: TCP
 - role: worker
 - role: worker
@@ -189,7 +189,7 @@ echo -e "${YELLOW}🐳 Setting up local registry access...${NC}"
 
 # Create configmap for local registry access
 kubectl create configmap registry-config \
-  --from-literal=registry-url=host.docker.internal:5000 \
+  --from-literal=registry-url=host.docker.internal:5004 \
   -n ocm-demos || echo "ConfigMap already exists"
 
 echo -e "${GREEN}✅ Registry configuration created${NC}"
@@ -222,9 +222,9 @@ echo -e "${GREEN}✨ Kubernetes cluster setup completed!${NC}"
 echo -e "${BLUE}🔗 Cluster details:${NC}"
 echo "   Cluster name: ocm-demo"
 echo "   Nodes: 1 control-plane + 2 workers"
-echo "   Ingress: NGINX (ports 80, 443)"
+echo "   Ingress: NGINX (ports 8080, 8443)"
 echo "   GitOps: Flux installed"
-echo "   Registry: localhost:5000 accessible"
+echo "   Registry: localhost:5004 accessible"
 echo "   Namespace: ocm-demos"
 echo ""
 echo -e "${BLUE}🚀 Ready for OCM deployment examples!${NC}"

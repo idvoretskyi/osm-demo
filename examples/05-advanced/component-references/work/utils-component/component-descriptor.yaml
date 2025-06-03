@@ -1,0 +1,35 @@
+component:
+  componentReferences: []
+  creationTime: "2025-06-03T14:42:27Z"
+  name: acme.corp/utils
+  provider: acme-corp
+  repositoryContexts: []
+  resources:
+  - access:
+      localReference: sha256.6be2953d7cb5a57e21dca2a611e02492677572efc83d524e9f2eca7b4bce5b22
+      mediaType: application/octet-stream
+      type: localBlob
+    digest:
+      hashAlgorithm: SHA-256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: 6be2953d7cb5a57e21dca2a611e02492677572efc83d524e9f2eca7b4bce5b22
+    name: source-code
+    relation: local
+    type: javascript
+    version: v1.0.0
+  - access:
+      localReference: sha256.382ff7a3341a36b535b268496894a2d7130a9d9e9066823efa8e135497e408ff
+      mediaType: application/octet-stream
+      type: localBlob
+    digest:
+      hashAlgorithm: SHA-256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: 382ff7a3341a36b535b268496894a2d7130a9d9e9066823efa8e135497e408ff
+    name: package-descriptor
+    relation: local
+    type: json
+    version: v1.0.0
+  sources: []
+  version: v1.0.0
+meta:
+  schemaVersion: v2

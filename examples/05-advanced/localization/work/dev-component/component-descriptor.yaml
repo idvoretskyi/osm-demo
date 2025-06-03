@@ -1,0 +1,35 @@
+component:
+  componentReferences: []
+  creationTime: "2025-06-03T14:42:28Z"
+  name: acme.corp/web-app-dev
+  provider: acme-corp
+  repositoryContexts: []
+  resources:
+  - access:
+      localReference: sha256.7d7990d80a31293c8f2da2ab37965c0fe4e90538137c7aa3720a6d7c0a7c8963
+      mediaType: application/octet-stream
+      type: localBlob
+    digest:
+      hashAlgorithm: SHA-256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: 7d7990d80a31293c8f2da2ab37965c0fe4e90538137c7aa3720a6d7c0a7c8963
+    name: k8s-manifests
+    relation: local
+    type: kubernetesManifest
+    version: v1.0.0
+  - access:
+      localReference: sha256.ed53da81db93d60443d789ef1ee70a90bffd29ad200478f4a416aa68af8a5ec2
+      mediaType: application/octet-stream
+      type: localBlob
+    digest:
+      hashAlgorithm: SHA-256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: ed53da81db93d60443d789ef1ee70a90bffd29ad200478f4a416aa68af8a5ec2
+    name: app-config
+    relation: local
+    type: json
+    version: v1.0.0
+  sources: []
+  version: v1.0.0
+meta:
+  schemaVersion: v2

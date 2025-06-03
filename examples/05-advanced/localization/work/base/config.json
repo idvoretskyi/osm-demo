@@ -1,0 +1,22 @@
+{
+  "app": {
+    "name": "web-app",
+    "version": "1.0.0",
+    "environment": "base",
+    "features": {
+      "authentication": true,
+      "logging": true,
+      "monitoring": false,
+      "debug": false
+    },
+    "database": {
+      "host": "localhost",
+      "port": 5432,
+      "name": "webapp_db"
+    },
+    "cache": {
+      "enabled": false,
+      "ttl": 300
+    }
+  }
+}

@@ -209,7 +209,7 @@ echo -e "${GREEN}Extracted manifests:${NC}"
 ls -la extracted/
 
 echo -e "${GREEN}Application manifest:${NC}"
-head -10 extracted/application-manifest
+head -10 extracted/app.yaml
 
 # Step 7: Demonstrate integrity verification
 echo -e "${YELLOW}🔐 Step 7: Verifying transport integrity${NC}"

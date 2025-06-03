@@ -200,14 +200,14 @@ echo "✅ OCM component created with K8s manifests"
 echo -e "${YELLOW}🚀 Step 3: Pushing component to registry${NC}"
 
 # Ensure registry is running
-if ! curl -s http://localhost:5000/v2/ > /dev/null 2>&1; then
+if ! curl -s http://localhost:5004/v2/ > /dev/null 2>&1; then
     echo "Starting local registry..."
-    docker run -d -p 5000:5000 --name registry registry:2 || true
+    docker run -d -p 5004:5000 --name registry registry:2 || true
     sleep 2
 fi
 
 # Push component
-ocm transfer componentarchive k8s-component localhost:5000
+ocm transfer componentarchive k8s-component localhost:5004
 
 echo "✅ Component pushed to registry"
 
@@ -226,7 +226,7 @@ spec:
   componentVersion:
     component: github.com/ocm-demo/k8s-app
     version: v1.0.0
-    repository: localhost:5000
+    repository: localhost:5004
   configuration:
     target:
       namespace: ocm-demos
@@ -254,7 +254,7 @@ metadata:
 spec:
   component: github.com/ocm-demo/k8s-app
   version: v1.0.0
-  repository: localhost:5000
+  repository: localhost:5004
 EOF
 
 echo "✅ ComponentVersion resource created"
@@ -272,13 +272,13 @@ echo "Extracting and applying manifests..."
 # Extract manifests from component
 cd ../components
 mkdir -p extracted
-ocm download resources localhost:5000//github.com/ocm-demo/k8s-app:v1.0.0 \
+ocm download resources localhost:5004//github.com/ocm-demo/k8s-app:v1.0.0 \
   configmap -O extracted/
-ocm download resources localhost:5000//github.com/ocm-demo/k8s-app:v1.0.0 \
+ocm download resources localhost:5004//github.com/ocm-demo/k8s-app:v1.0.0 \
   deployment -O extracted/
-ocm download resources localhost:5000//github.com/ocm-demo/k8s-app:v1.0.0 \
+ocm download resources localhost:5004//github.com/ocm-demo/k8s-app:v1.0.0 \
   service -O extracted/
-ocm download resources localhost:5000//github.com/ocm-demo/k8s-app:v1.0.0 \
+ocm download resources localhost:5004//github.com/ocm-demo/k8s-app:v1.0.0 \
   ingress -O extracted/
 
 # Apply manifests to cluster
@@ -334,7 +334,7 @@ kill $PORT_FORWARD_PID 2>/dev/null || true
 echo -e "${GREEN}✨ OCM K8s deployment demo completed successfully!${NC}"
 echo -e "${BLUE}📋 Deployment summary:${NC}"
 echo "   Component: github.com/ocm-demo/k8s-app:v1.0.0"
-echo "   Registry: localhost:5000"
+echo "   Registry: localhost:5004"
 echo "   Namespace: ocm-demos"
 echo "   Resources: ConfigMap, Deployment, Service, Ingress"
 echo ""

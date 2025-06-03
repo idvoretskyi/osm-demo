@@ -58,12 +58,12 @@ start_registry() {
     docker rm -f registry 2>/dev/null || true
     
     # Start registry
-    docker run -d -p 5000:5000 --name registry registry:2
+    docker run -d -p 5005:5000 --name registry registry:2
     
     # Wait for registry to be ready
     sleep 3
-    if curl -s http://localhost:5000/v2/ > /dev/null; then
-        echo -e "${GREEN}✅ Registry started successfully on localhost:5000${NC}"
+    if curl -s http://localhost:5005/v2/ > /dev/null; then
+        echo -e "${GREEN}✅ Registry started successfully on localhost:5005${NC}"
     else
         echo -e "${RED}❌ Failed to start registry${NC}"
         exit 1
@@ -104,8 +104,8 @@ check_status() {
     fi
     
     # Check registry
-    if curl -s http://localhost:5000/v2/ > /dev/null; then
-        echo -e "${GREEN}✅ Local Registry: Running on localhost:5000${NC}"
+    if curl -s http://localhost:5005/v2/ > /dev/null; then
+        echo -e "${GREEN}✅ Local Registry: Running on localhost:5005${NC}"
     else
         echo -e "${RED}❌ Local Registry: Not running${NC}"
     fi
@@ -143,24 +143,24 @@ check_status() {
 list_components() {
     echo -e "${YELLOW}📦 Listing components in local registry...${NC}"
     
-    if ! curl -s http://localhost:5000/v2/ > /dev/null; then
+    if ! curl -s http://localhost:5005/v2/ > /dev/null; then
         echo -e "${RED}❌ Local registry is not running${NC}"
         return 1
     fi
     
     # Get repository list
-    repos=$(curl -s http://localhost:5000/v2/_catalog | jq -r '.repositories[]?' 2>/dev/null || echo "")
+    repos=$(curl -s http://localhost:5005/v2/_catalog | jq -r '.repositories[]?' 2>/dev/null || echo "")
     
     if [ -z "$repos" ]; then
         echo -e "${YELLOW}📭 No components found in registry${NC}"
         return
     fi
     
-    echo -e "${GREEN}Components in localhost:5000:${NC}"
+    echo -e "${GREEN}Components in localhost:5005:${NC}"
     echo "$repos" | while read -r repo; do
         if [[ "$repo" == *"ocm-demo"* ]]; then
             # Get tags for OCM components
-            tags=$(curl -s "http://localhost:5000/v2/$repo/tags/list" | jq -r '.tags[]?' 2>/dev/null || echo "")
+            tags=$(curl -s "http://localhost:5005/v2/$repo/tags/list" | jq -r '.tags[]?' 2>/dev/null || echo "")
             if [ -n "$tags" ]; then
                 echo "  📦 $repo"
                 echo "$tags" | while read -r tag; do
@@ -181,7 +181,7 @@ run_all_examples() {
     echo ""
     
     # Start registry if needed
-    if ! curl -s http://localhost:5000/v2/ > /dev/null; then
+    if ! curl -s http://localhost:5005/v2/ > /dev/null; then
         start_registry
     fi
     

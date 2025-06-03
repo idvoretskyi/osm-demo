@@ -1,0 +1,22 @@
+{
+  "app": {
+    "name": "web-app",
+    "version": "1.0.0",
+    "environment": "production",
+    "features": {
+      "authentication": true,
+      "logging": true,
+      "monitoring": true,
+      "debug": false
+    },
+    "database": {
+      "host": "prod-db.cluster.local",
+      "port": 5432,
+      "name": "webapp_prod"
+    },
+    "cache": {
+      "enabled": true,
+      "ttl": 3600
+    }
+  }
+}
