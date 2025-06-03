@@ -49,21 +49,21 @@ show_help() {
 start_registry() {
     echo -e "${YELLOW}🐳 Starting local OCI registry...${NC}"
     
-    if docker ps | grep -q registry; then
+    if docker ps | grep -q local-registry; then
         echo -e "${GREEN}✅ Registry already running${NC}"
         return
     fi
     
     # Remove if exists but not running
-    docker rm -f registry 2>/dev/null || true
+    docker rm -f local-registry 2>/dev/null || true
     
     # Start registry
-    docker run -d -p 5005:5000 --name registry registry:2
+    docker run -d -p 5001:5000 --name local-registry registry:2
     
     # Wait for registry to be ready
     sleep 3
-    if curl -s http://localhost:5005/v2/ > /dev/null; then
-        echo -e "${GREEN}✅ Registry started successfully on localhost:5005${NC}"
+    if curl -s http://localhost:5001/v2/ > /dev/null; then
+        echo -e "${GREEN}✅ Registry started successfully on localhost:5001${NC}"
     else
         echo -e "${RED}❌ Failed to start registry${NC}"
         exit 1
@@ -72,8 +72,8 @@ start_registry() {
 
 stop_registry() {
     echo -e "${YELLOW}🛑 Stopping local OCI registry...${NC}"
-    docker stop registry 2>/dev/null || echo "Registry not running"
-    docker rm registry 2>/dev/null || echo "Registry container not found"
+    docker stop local-registry 2>/dev/null || echo "Registry not running"
+    docker rm local-registry 2>/dev/null || echo "Registry container not found"
     echo -e "${GREEN}✅ Registry stopped${NC}"
 }
 
@@ -104,8 +104,8 @@ check_status() {
     fi
     
     # Check registry
-    if curl -s http://localhost:5005/v2/ > /dev/null; then
-        echo -e "${GREEN}✅ Local Registry: Running on localhost:5005${NC}"
+    if curl -s http://localhost:5001/v2/ > /dev/null; then
+        echo -e "${GREEN}✅ Local Registry: Running on localhost:5001${NC}"
     else
         echo -e "${RED}❌ Local Registry: Not running${NC}"
     fi
@@ -143,24 +143,25 @@ check_status() {
 list_components() {
     echo -e "${YELLOW}📦 Listing components in local registry...${NC}"
     
-    if ! curl -s http://localhost:5005/v2/ > /dev/null; then
-        echo -e "${RED}❌ Local registry is not running${NC}"
-        return 1
+    # Start registry if not running
+    if ! curl -s http://localhost:5001/v2/ > /dev/null; then
+        echo -e "${YELLOW}⚠️  Local registry not running, starting it...${NC}"
+        start_registry
     fi
     
     # Get repository list
-    repos=$(curl -s http://localhost:5005/v2/_catalog | jq -r '.repositories[]?' 2>/dev/null || echo "")
+    repos=$(curl -s http://localhost:5001/v2/_catalog | jq -r '.repositories[]?' 2>/dev/null || echo "")
     
     if [ -z "$repos" ]; then
         echo -e "${YELLOW}📭 No components found in registry${NC}"
         return
     fi
     
-    echo -e "${GREEN}Components in localhost:5005:${NC}"
+    echo -e "${GREEN}Components in localhost:5001:${NC}"
     echo "$repos" | while read -r repo; do
         if [[ "$repo" == *"ocm-demo"* ]]; then
             # Get tags for OCM components
-            tags=$(curl -s "http://localhost:5005/v2/$repo/tags/list" | jq -r '.tags[]?' 2>/dev/null || echo "")
+            tags=$(curl -s "http://localhost:5001/v2/$repo/tags/list" | jq -r '.tags[]?' 2>/dev/null || echo "")
             if [ -n "$tags" ]; then
                 echo "  📦 $repo"
                 echo "$tags" | while read -r tag; do
@@ -181,7 +182,7 @@ run_all_examples() {
     echo ""
     
     # Start registry if needed
-    if ! curl -s http://localhost:5005/v2/ > /dev/null; then
+    if ! curl -s http://localhost:5001/v2/ > /dev/null; then
         start_registry
     fi
     
@@ -213,8 +214,8 @@ cleanup_demo() {
     
     # Stop and remove containers
     echo "Stopping containers..."
-    docker stop registry source-registry target-registry source-env-registry target-env-registry 2>/dev/null || true
-    docker rm registry source-registry target-registry source-env-registry target-env-registry 2>/dev/null || true
+    docker stop local-registry demo-registry registry source-registry target-registry source-env-registry target-env-registry 2>/dev/null || true
+    docker rm local-registry demo-registry registry source-registry target-registry source-env-registry target-env-registry 2>/dev/null || true
     
     # Delete kind cluster
     if kind get clusters | grep -q ocm-demo; then

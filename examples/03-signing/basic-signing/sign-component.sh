@@ -203,8 +203,10 @@ echo -e "${YELLOW}🚀 Step 7: Transporting signed component${NC}"
 # Start registry if not running
 if ! curl -s http://localhost:5001/v2/ > /dev/null 2>&1; then
     echo "Starting registry..."
-    docker run -d -p 5001:5000 --name registry registry:2 || true
-    sleep 2
+    # Remove any existing registry containers that might conflict
+    docker rm -f registry local-registry 2>/dev/null || true
+    docker run -d -p 5001:5000 --name local-registry registry:2
+    sleep 3
 fi
 
 # Push signed component to registry

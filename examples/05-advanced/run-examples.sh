@@ -1,6 +1,13 @@
 #!/bin/bash
 
-# Run all advanced examples
+# Run all advance# Ensure local registry is running
+if ! curl -s http://localhost:5001/v2/ > /dev/null 2>&1; then
+    echo -e "${YELLOW}⚠️  Starting local registry...${NC}"
+    # Remove any existing registry containers that might conflict
+    docker rm -f registry local-registry 2>/dev/null || true
+    docker run -d -p 5001:5000 --name local-registry registry:2
+    sleep 3
+fiples
 # This script executes all examples in the 05-advanced section
 
 set -e
@@ -31,7 +38,9 @@ fi
 # Ensure registry is running
 if ! curl -s http://localhost:5001/v2/ > /dev/null 2>&1; then
     echo -e "${YELLOW}⚠️  Starting local registry...${NC}"
-    docker run -d -p 5001:5000 --name registry registry:2 || echo "Registry container already exists"
+    # Remove any existing registry containers that might conflict
+    docker rm -f registry local-registry 2>/dev/null || true
+    docker run -d -p 5001:5000 --name local-registry registry:2
     sleep 3
 fi
 

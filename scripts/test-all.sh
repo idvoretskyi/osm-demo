@@ -72,8 +72,8 @@ cleanup() {
     
     # Clean up any running containers
     if command -v docker &> /dev/null; then
-        docker stop registry 2>/dev/null || true
-        docker rm registry 2>/dev/null || true
+        docker stop local-registry demo-registry registry source-registry target-registry source-env-registry target-env-registry 2>/dev/null || true
+        docker rm local-registry demo-registry registry source-registry target-registry source-env-registry target-env-registry 2>/dev/null || true
     fi
     
     # Clean up kind cluster
