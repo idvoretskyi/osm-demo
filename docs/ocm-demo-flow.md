@@ -11,7 +11,7 @@ graph TD
     C --> D{Choose Learning Path}
     
     D --> E[📝 01-Basic Examples]
-    D --> F[🚀 02-Transport Examples] 
+    D --> F[🚀 02-Transport Examples]
     D --> G[🔐 03-Signing Examples]
     D --> H[☸️ 04-K8s Deployment]
     
@@ -24,7 +24,7 @@ graph TD
     %% Transport Examples Flow
     F --> F1[Local to OCI Registry]
     F1 --> F2[Cross-Registry Replication]
-    F2 --> F3[Offline Transport (CTF)]
+    F2 --> F3[Offline Transport CTF]
     F3 --> G
     
     %% Signing Examples Flow
