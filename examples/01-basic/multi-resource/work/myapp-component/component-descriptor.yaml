@@ -1,0 +1,47 @@
+component:
+  componentReferences: []
+  creationTime: "2025-06-03T13:31:46Z"
+  name: github.com/ocm-demo/myapp
+  provider: ocm-demo
+  repositoryContexts: []
+  resources:
+  - access:
+      localReference: sha256.a0883a492fe45ef91a09ccc63536c46abf7e1eaff96bd60647d98711a134b292
+      mediaType: application/octet-stream
+      type: localBlob
+    digest:
+      hashAlgorithm: SHA-256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: a0883a492fe45ef91a09ccc63536c46abf7e1eaff96bd60647d98711a134b292
+    name: app-config
+    relation: local
+    type: kubernetesManifest
+    version: v1.0.0
+  - access:
+      localReference: sha256.f1dda111ae5e40992ce343c3517c951a1c9eaab09f52089020ae54767e107123
+      mediaType: application/octet-stream
+      type: localBlob
+    digest:
+      hashAlgorithm: SHA-256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: f1dda111ae5e40992ce343c3517c951a1c9eaab09f52089020ae54767e107123
+    name: deployment-script
+    relation: local
+    type: executable
+    version: v1.0.0
+  - access:
+      localReference: sha256.d3a7bd9ed438ee13012da2160cbfe1d7d2b516dd8b6ab002b49ac557abd9955b
+      mediaType: application/octet-stream
+      type: localBlob
+    digest:
+      hashAlgorithm: SHA-256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: d3a7bd9ed438ee13012da2160cbfe1d7d2b516dd8b6ab002b49ac557abd9955b
+    name: documentation
+    relation: local
+    type: plainText
+    version: v1.0.0
+  sources: []
+  version: v1.0.0
+meta:
+  schemaVersion: v2

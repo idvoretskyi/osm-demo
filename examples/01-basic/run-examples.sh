@@ -33,9 +33,9 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # Start local registry if not running
-if ! curl -s http://localhost:5000/v2/ > /dev/null 2>&1; then
+if ! curl -s http://localhost:5001/v2/ > /dev/null 2>&1; then
     echo -e "${YELLOW}🚀 Starting local OCI registry...${NC}"
-    docker run -d -p 5000:5000 --name registry registry:2 || echo "Registry container already exists"
+    docker run -d -p 5001:5000 --name registry registry:2 || echo "Registry container already exists"
     sleep 2
 fi
 

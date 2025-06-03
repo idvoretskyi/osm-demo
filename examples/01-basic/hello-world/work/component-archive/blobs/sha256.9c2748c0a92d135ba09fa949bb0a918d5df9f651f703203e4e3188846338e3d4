@@ -1,0 +1,8 @@
+Hello from OCM!
+
+This is a simple text resource packaged as an OCM component.
+It demonstrates the basic building blocks of the Open Component Model.
+
+Component: hello-world
+Version: v1.0.0
+Created: $(date)

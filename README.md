@@ -26,25 +26,38 @@ The Open Component Model (OCM) is an open standard for describing software bill 
    ./scripts/setup-environment.sh
    ```
 
-2. **Start with basic examples:**
+2. **Run the 5-minute demo tour:**
+   ```bash
+   ./scripts/quick-demo.sh
+   # or via utils
+   ./scripts/ocm-utils.sh demo
+   ```
+
+3. **Start with basic examples:**
    ```bash
    cd examples/01-basic
    ./run-examples.sh
    ```
 
-3. **Explore component transport:**
+3. **Start with basic examples:**
+   ```bash
+   cd examples/01-basic
+   ./run-examples.sh
+   ```
+
+4. **Explore component transport:**
    ```bash
    cd examples/02-transport/local-to-oci
    ./transport-example.sh
    ```
 
-4. **Learn about signing and verification:**
+5. **Learn about signing and verification:**
    ```bash
    cd examples/03-signing/basic-signing
    ./sign-component.sh
    ```
 
-5. **Deploy to Kubernetes:**
+6. **Deploy to Kubernetes:**
    ```bash
    cd examples/04-k8s-deployment
    ./setup-cluster.sh
@@ -52,10 +65,57 @@ The Open Component Model (OCM) is an open standard for describing software bill 
    ./deploy-example.sh
    ```
 
-6. **Use utility scripts for common tasks:**
+7. **Use utility scripts for common tasks:**
    ```bash
    ./scripts/ocm-utils.sh --help
    ```
+
+8. **Validate everything works with the test suite:**
+   ```bash
+   ./scripts/test-all.sh
+   # or via utils
+   ./scripts/ocm-utils.sh test-all
+   ```
+
+## 🌊 Learning Flow Visualization
+
+```mermaid
+graph TD
+    A[🚀 Start: OCM Demo] --> B[🛠️ Environment Setup]
+    B --> C{Choose Learning Path}
+    
+    C --> D[📝 01-Basic<br/>Component Creation]
+    C --> E[🚀 02-Transport<br/>Registry Movement]
+    C --> F[🔐 03-Signing<br/>Security & Trust]
+    C --> G[☸️ 04-K8s<br/>Deployment]
+    
+    D --> D1[Hello World]
+    D1 --> D2[Multi-Resource]
+    D2 --> E
+    
+    E --> E1[Local → OCI]
+    E1 --> E2[Offline Transport]
+    E2 --> F
+    
+    F --> F1[Key Generation]
+    F1 --> F2[Digital Signing]
+    F2 --> G
+    
+    G --> G1[Kind Cluster]
+    G1 --> G2[OCM K8s Toolkit]
+    G2 --> H[🎯 Production Ready]
+    
+    I[🛠️ OCM Utils] -.-> D
+    I -.-> E
+    I -.-> F
+    I -.-> G
+    
+    style A fill:#e1f5fe
+    style H fill:#e8f5e8
+    style I fill:#fff3e0
+```
+
+> 💡 **Tip**: For detailed flow diagrams and component lifecycle visualization, see [docs/ocm-demo-flow.md](docs/ocm-demo-flow.md)
 
 ## 📁 Repository Structure
 
@@ -144,12 +204,17 @@ osm-demo/
 - Learn: Kubernetes deployment patterns, GitOps workflows, cloud-native integration
 
 ### 🛠️ Utility Scripts
+- **Quick Demo**: Interactive 5-minute tour of key OCM capabilities
 - **Environment Setup**: Automated installation of OCM CLI, kind, kubectl, Flux
 - **Registry Management**: Start/stop/reset local OCI registries
 - **Component Listing**: View components in registries
+- **Test Suite**: Comprehensive validation of all examples and functionality
 - **Cleanup Tools**: Clean up demo environments and artifacts
 
 ## 🎯 Learning Path
+
+### Quickstart (5 minutes)
+0. Run the interactive demo tour: `./scripts/quick-demo.sh`
 
 ### Beginner (30 minutes)
 1. Run environment setup: `./scripts/setup-environment.sh`
@@ -166,6 +231,46 @@ osm-demo/
 8. Build custom components with your own applications
 9. Integrate with existing CI/CD pipelines
 10. Explore production deployment patterns
+
+## 🧪 Testing and Validation
+
+The playground includes comprehensive testing to ensure all examples work correctly:
+
+### Quick Validation
+```bash
+# Run all tests
+./scripts/test-all.sh
+
+# Skip time-consuming tests
+./scripts/test-all.sh --skip-long
+
+# Skip Kubernetes tests
+./scripts/test-all.sh --skip-k8s
+
+# Via utility script
+./scripts/ocm-utils.sh test-all
+```
+
+### Test Coverage
+- ✅ **Script Validation**: Syntax checking and executable permissions
+- ✅ **Environment Setup**: Tool installation and configuration
+- ✅ **Basic Examples**: Component creation and resource handling
+- ✅ **Transport Examples**: Registry operations and offline transport
+- ✅ **Signing Examples**: Cryptographic operations and verification
+- ✅ **K8s Deployment**: Cluster setup and component deployment
+- ✅ **Utility Functions**: All helper scripts and operations
+- ✅ **Documentation**: README files and guide completeness
+- ✅ **Performance**: Basic performance validation
+
+### CI/CD Integration
+The test suite is designed for CI/CD environments:
+```bash
+# Minimal testing for CI
+./scripts/test-all.sh --skip-k8s --skip-long
+
+# Full validation (recommended for releases)
+./scripts/test-all.sh
+```
 
 ## 🛠️ Tools and Technologies
 

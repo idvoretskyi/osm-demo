@@ -78,12 +78,13 @@ ocm create componentarchive github.com/ocm-demo/hello-world v1.0.0 \
   --provider ocm-demo \
   --file component-archive
 
-# Add the resource
-ocm add resources component-archive hello.txt \
+# Add the resource with correct syntax
+ocm add resources component-archive \
   --name hello-message \
   --type plainText \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath hello.txt
 
 echo "✅ Created OCM component archive"
 
@@ -96,16 +97,16 @@ echo -e "${GREEN}Component resources:${NC}"
 ocm get resources component-archive
 
 # Step 5: Transfer to local registry (if available)
-if curl -s http://localhost:5000/v2/ > /dev/null 2>&1; then
+if curl -s http://localhost:5001/v2/ > /dev/null 2>&1; then
     echo -e "${YELLOW}🚀 Step 5: Pushing to local registry${NC}"
-    ocm transfer componentarchive component-archive localhost:5000
-    echo "✅ Component pushed to localhost:5000"
+    ocm transfer componentarchive component-archive http://localhost:5001
+    echo "✅ Component pushed to localhost:5001"
     
     echo -e "${GREEN}Verifying in registry:${NC}"
-    ocm get componentversions localhost:5000//github.com/ocm-demo/hello-world:v1.0.0
+    ocm get componentversions http://localhost:5001//github.com/ocm-demo/hello-world:v1.0.0
 else
     echo -e "${YELLOW}⚠️  Local registry not available. Skipping push step.${NC}"
-    echo "   Start registry with: docker run -d -p 5000:5000 --name registry registry:2"
+    echo "   Start registry with: docker run -d -p 5001:5000 --name registry registry:2"
 fi
 
 echo -e "${GREEN}✨ Hello World component created successfully!${NC}"

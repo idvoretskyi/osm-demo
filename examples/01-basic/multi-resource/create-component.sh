@@ -90,25 +90,28 @@ ocm create componentarchive github.com/ocm-demo/myapp v1.0.0 \
   --file myapp-component
 
 # Add configuration resource
-ocm add resources myapp-component config/app.yaml \
+ocm add resources myapp-component \
   --name app-config \
   --type kubernetesManifest \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath config/app.yaml
 
 # Add deployment script
-ocm add resources myapp-component scripts/deploy.sh \
+ocm add resources myapp-component \
   --name deployment-script \
   --type executable \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath scripts/deploy.sh
 
 # Add documentation
-ocm add resources myapp-component docs/README.md \
+ocm add resources myapp-component \
   --name documentation \
   --type plainText \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath docs/README.md
 
 echo "✅ Created multi-resource component"
 
@@ -145,23 +148,23 @@ echo -e "${YELLOW}📤 Step 5: Demonstrating resource extraction${NC}"
 mkdir -p extracted
 
 echo "Extracting configuration file:"
-ocm download resources myapp-component app-config -O extracted/
+ocm download resources myapp-component app-config -O extracted/app.yaml
 ls -la extracted/
 
 echo "Extracting deployment script:"
-ocm download resources myapp-component deployment-script -O extracted/
+ocm download resources myapp-component deployment-script -O extracted/deploy.sh
 ls -la extracted/
 
 echo "✅ Resources extracted successfully"
 
 # Step 6: Push to registry if available
-if curl -s http://localhost:5000/v2/ > /dev/null 2>&1; then
+if curl -s http://localhost:5001/v2/ > /dev/null 2>&1; then
     echo -e "${YELLOW}🚀 Step 6: Pushing to local registry${NC}"
-    ocm transfer componentarchive myapp-component localhost:5000
-    echo "✅ Multi-resource component pushed to localhost:5000"
+    ocm transfer componentarchive myapp-component http://localhost:5001
+    echo "✅ Multi-resource component pushed to localhost:5001"
     
     echo -e "${GREEN}Verifying in registry:${NC}"
-    ocm get resources localhost:5000//github.com/ocm-demo/myapp:v1.0.0
+    ocm get resources http://localhost:5001//github.com/ocm-demo/myapp:v1.0.0
 else
     echo -e "${YELLOW}⚠️  Local registry not available. Skipping push step.${NC}"
 fi

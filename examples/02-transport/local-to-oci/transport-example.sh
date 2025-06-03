@@ -25,18 +25,17 @@ cd "$WORK_DIR"
 # Step 1: Ensure registries are running
 echo -e "${YELLOW}🐳 Step 1: Setting up registries${NC}"
 
-# Start source registry (port 5000)
-if ! curl -s http://localhost:5000/v2/ > /dev/null 2>&1; then
-    echo "Starting source registry on port 5000..."
-    docker run -d -p 5000:5000 --name source-registry registry:2 || true
+# Start source registry (port 5001)
+if ! curl -s http://localhost:5001/v2/ > /dev/null 2>&1; then
+    echo "Starting source registry on port 5001..."
+    docker run -d -p 5001:5000 --name source-registry registry:2 || true
     sleep 2
 fi
 
-# Start target registry (port 5001)
-if ! curl -s http://localhost:5001/v2/ > /dev/null 2>&1; then
-    echo "Starting target registry on port 5001..."
-    docker run -d -p 5001:5001 --name target-registry \
-        -e REGISTRY_HTTP_ADDR=0.0.0.0:5001 registry:2 || true
+# Start target registry (port 5002)
+if ! curl -s http://localhost:5002/v2/ > /dev/null 2>&1; then
+    echo "Starting target registry on port 5002..."
+    docker run -d -p 5002:5000 --name target-registry registry:2 || true
     sleep 2
 fi
 
@@ -98,7 +97,7 @@ spec:
     spec:
       containers:
       - name: app
-        image: localhost:5000/transport-demo:v1.0.0
+        image: localhost:5001/transport-demo:v1.0.0
         ports:
         - containerPort: 8080
 ---
@@ -126,53 +125,55 @@ ocm create componentarchive github.com/ocm-demo/transport-app v1.0.0 \
   --file transport-component
 
 # Add resources
-ocm add resources transport-component app/main.go \
+ocm add resources transport-component \
   --name source-code \
   --type file \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath app/main.go
 
-ocm add resources transport-component app/Dockerfile \
+ocm add resources transport-component \
   --name dockerfile \
   --type dockerfile \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath app/Dockerfile
 
-ocm add resources transport-component app/k8s-deployment.yaml \
+ocm add resources transport-component \
   --name k8s-manifests \
   --type kubernetesManifest \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath app/k8s-deployment.yaml
 
 echo "✅ Created component archive with multiple resources"
 
 # Step 4: Transport to first registry
 echo -e "${YELLOW}🚀 Step 4: Transporting to source registry${NC}"
 
-ocm transfer componentarchive transport-component localhost:5000
+ocm transfer componentarchive transport-component http://localhost:5001
 
-echo "✅ Component transported to localhost:5000"
+echo "✅ Component transported to localhost:5001"
 
 # Verify in source registry
 echo -e "${GREEN}Verifying in source registry:${NC}"
-ocm get componentversions localhost:5000//github.com/ocm-demo/transport-app:v1.0.0
+ocm get componentversions http://localhost:5001//github.com/ocm-demo/transport-app:v1.0.0
 
 # Step 5: Transport from OCI to OCI (registry to registry)
 echo -e "${YELLOW}📤 Step 5: Transporting between registries${NC}"
 
-ocm transfer componentversion localhost:5000//github.com/ocm-demo/transport-app:v1.0.0 localhost:5001
+ocm transfer componentversion http://localhost:5001//github.com/ocm-demo/transport-app:v1.0.0 http://localhost:5002
 
-echo "✅ Component transported from localhost:5000 to localhost:5001"
+echo "✅ Component transported from localhost:5001 to localhost:5002"
 
 # Verify in target registry
 echo -e "${GREEN}Verifying in target registry:${NC}"
-ocm get componentversions localhost:5001//github.com/ocm-demo/transport-app:v1.0.0
+ocm get componentversions http://localhost:5002//github.com/ocm-demo/transport-app:v1.0.0
 
 # Step 6: Transport back to local archive (round trip)
 echo -e "${YELLOW}🔄 Step 6: Transporting back to local archive${NC}"
 
-ocm transfer componentversion localhost:5001//github.com/ocm-demo/transport-app:v1.0.0 \
-  --type componentarchive target-archive
+ocm transfer componentversion http://localhost:5002//github.com/ocm-demo/transport-app:v1.0.0 target-archive
 
 echo "✅ Component transported back to local archive"
 
@@ -195,17 +196,17 @@ echo -e "${YELLOW}📤 Step 8: Extracting content for verification${NC}"
 mkdir -p extracted/{original,transported}
 
 echo "Extracting from original archive:"
-ocm download resources transport-component source-code -O extracted/original/
-ocm download resources transport-component dockerfile -O extracted/original/
-ocm download resources transport-component k8s-manifests -O extracted/original/
+ocm download resources transport-component source-code -O extracted/original/main.go
+ocm download resources transport-component dockerfile -O extracted/original/Dockerfile
+ocm download resources transport-component k8s-manifests -O extracted/original/k8s-deployment.yaml
 
 echo "Extracting from transported archive:"
-ocm download resources target-archive source-code -O extracted/transported/
-ocm download resources target-archive dockerfile -O extracted/transported/
-ocm download resources target-archive k8s-manifests -O extracted/transported/
+ocm download resources target-archive source-code -O extracted/transported/main.go
+ocm download resources target-archive dockerfile -O extracted/transported/Dockerfile
+ocm download resources target-archive k8s-manifests -O extracted/transported/k8s-deployment.yaml
 
 echo "Comparing files:"
-diff -r extracted/original/ extracted/transported/ || echo "Files are identical ✅"
+diff -r extracted/original/ extracted/transported/ && echo "Files are identical ✅" || echo "Files differ ❌"
 
 echo -e "${GREEN}✨ Transport example completed successfully!${NC}"
 echo -e "${BLUE}📁 Work directory: $WORK_DIR${NC}"

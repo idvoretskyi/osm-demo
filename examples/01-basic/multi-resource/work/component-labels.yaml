@@ -1,0 +1,7 @@
+labels:
+  - name: demo.ocm.software/category
+    value: sample-application
+  - name: demo.ocm.software/complexity
+    value: intermediate
+  - name: demo.ocm.software/resources
+    value: "3"

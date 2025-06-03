@@ -1,0 +1,118 @@
+name: OCM Demo Playground CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-suite:
+          - { name: "Quick Tests", args: "--skip-k8s --skip-long" }
+          - { name: "Full Tests", args: "" }
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Install dependencies
+      run: |
+        # Install kind
+        curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+        chmod +x ./kind
+        sudo mv ./kind /usr/local/bin/kind
+        
+        # Install kubectl
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x kubectl
+        sudo mv kubectl /usr/local/bin/kubectl
+        
+        # Install Flux
+        curl -s https://fluxcd.io/install.sh | sudo bash
+        
+    - name: Set up environment
+      run: |
+        ./scripts/setup-environment.sh
+        
+    - name: Run ${{ matrix.test-suite.name }}
+      run: |
+        ./scripts/test-all.sh ${{ matrix.test-suite.args }}
+        
+    - name: Upload test logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-logs-${{ matrix.test-suite.name }}-${{ github.run_number }}
+        path: /tmp/ocm-demo-test.log
+        retention-days: 7
+
+  quick-demo:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up environment
+      run: |
+        ./scripts/setup-environment.sh
+        
+    - name: Run quick demo (non-interactive)
+      run: |
+        ./scripts/quick-demo.sh --non-interactive
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Run security scan on shell scripts
+      run: |
+        # Install shellcheck
+        sudo apt-get update
+        sudo apt-get install -y shellcheck
+        
+        # Scan all shell scripts
+        find . -name "*.sh" -type f -exec shellcheck {} \;
+        
+    - name: Check for secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+
+  documentation:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Validate documentation
+      run: |
+        # Check that all examples have README files
+        for dir in examples/*/; do
+          if [ ! -f "${dir}README.md" ]; then
+            echo "Missing README.md in $dir"
+            exit 1
+          fi
+        done
+        
+        # Check that all scripts are executable
+        find . -name "*.sh" -type f ! -executable -print | \
+          if read -r line; then
+            echo "Non-executable script found: $line"
+            exit 1
+          fi
+        
+        echo "✅ All documentation checks passed"

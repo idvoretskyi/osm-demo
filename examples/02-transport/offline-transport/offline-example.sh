@@ -122,20 +122,22 @@ ocm create componentarchive github.com/ocm-demo/secure-app v1.0.0 \
   --provider security-team \
   --file secure-component
 
-ocm add resources secure-component secure-app/app.yaml \
+ocm add resources secure-component \
   --name application-manifest \
   --type kubernetesManifest \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath secure-app/app.yaml
 
-ocm add resources secure-component secure-app/security-policy.yaml \
+ocm add resources secure-component \
   --name security-policy \
   --type kubernetesManifest \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath secure-app/security-policy.yaml
 
 # Push to source registry
-ocm transfer componentarchive secure-component localhost:5002
+ocm transfer componentarchive secure-component http://localhost:5002
 
 echo "✅ Source environment prepared with secure component"
 
@@ -145,8 +147,7 @@ echo -e "${YELLOW}📤 Step 2: Exporting to Common Transport Format${NC}"
 cd ../transport-bundle
 
 # Create transport archive for offline transfer
-ocm transfer componentversion localhost:5002//github.com/ocm-demo/secure-app:v1.0.0 \
-  --type tgz secure-app-transport.tar.gz
+ocm transfer componentversion http://localhost:5002//github.com/ocm-demo/secure-app:v1.0.0 ctf+tgz::secure-app-transport.tar.gz
 
 echo "✅ Component exported to transport bundle: secure-app-transport.tar.gz"
 
@@ -173,8 +174,7 @@ cd ../target-env
 # Start target registry (simulating air-gapped registry)
 if ! curl -s http://localhost:5003/v2/ > /dev/null 2>&1; then
     echo "Starting target environment registry on port 5003..."
-    docker run -d -p 5003:5003 --name target-env-registry \
-        -e REGISTRY_HTTP_ADDR=0.0.0.0:5003 registry:2 || true
+    docker run -d -p 5003:5000 --name target-env-registry registry:2 || true
     sleep 2
 fi
 
@@ -184,26 +184,26 @@ echo "✅ Target environment registry ready"
 echo -e "${YELLOW}📥 Step 5: Importing from transport bundle${NC}"
 
 # Import the component from transport archive
-ocm transfer archive secure-app-transport.tar.gz localhost:5003
+ocm transfer ctf secure-app-transport.tar.gz http://localhost:5003
 
 echo "✅ Component imported into target environment"
 
 # Verify import
 echo -e "${GREEN}Verifying imported component:${NC}"
-ocm get componentversions localhost:5003//github.com/ocm-demo/secure-app:v1.0.0
+ocm get componentversions http://localhost:5003//github.com/ocm-demo/secure-app:v1.0.0
 
 echo -e "${GREEN}Component resources in target environment:${NC}"
-ocm get resources localhost:5003//github.com/ocm-demo/secure-app:v1.0.0
+ocm get resources http://localhost:5003//github.com/ocm-demo/secure-app:v1.0.0
 
 # Step 6: Extract and verify content in target environment
 echo -e "${YELLOW}🔍 Step 6: Extracting content in target environment${NC}"
 
 mkdir -p extracted
-ocm download resources localhost:5003//github.com/ocm-demo/secure-app:v1.0.0 \
-  application-manifest -O extracted/
+ocm download resources http://localhost:5003//github.com/ocm-demo/secure-app:v1.0.0 \
+  application-manifest -O extracted/app.yaml
 
-ocm download resources localhost:5003//github.com/ocm-demo/secure-app:v1.0.0 \
-  security-policy -O extracted/
+ocm download resources http://localhost:5003//github.com/ocm-demo/secure-app:v1.0.0 \
+  security-policy -O extracted/security-policy.yaml
 
 echo -e "${GREEN}Extracted manifests:${NC}"
 ls -la extracted/

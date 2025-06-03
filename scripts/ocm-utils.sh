@@ -22,10 +22,13 @@ show_help() {
     echo ""
     echo -e "${YELLOW}Commands:${NC}"
     echo "  setup           - Run full environment setup"
+    echo "  demo            - Run quick 5-minute demo tour"
+    echo "  summary         - Show project overview and capabilities"
     echo "  registry        - Manage local OCI registry"
     echo "  cleanup         - Clean up demo artifacts"
     echo "  status          - Show environment status"
     echo "  run-all         - Run all examples in sequence"
+    echo "  test-all        - Run comprehensive test suite"
     echo "  list-components - List components in local registry"
     echo ""
     echo -e "${YELLOW}Registry commands:${NC}"
@@ -35,8 +38,11 @@ show_help() {
     echo ""
     echo -e "${YELLOW}Examples:${NC}"
     echo "  $0 setup"
+    echo "  $0 demo"
     echo "  $0 registry start"
     echo "  $0 run-all"
+    echo "  $0 test-all"
+    echo "  $0 test-all --skip-k8s"
     echo "  $0 cleanup"
 }
 
@@ -225,13 +231,36 @@ cleanup_demo() {
 
 setup_environment() {
     echo -e "${YELLOW}🚀 Setting up OCM demo environment...${NC}"
-    "$SCRIPT_DIR/scripts/setup-environment.sh"
+    "$SCRIPT_DIR/setup-environment.sh"
+}
+
+run_test_suite() {
+    echo -e "${YELLOW}🧪 Running comprehensive test suite...${NC}"
+    "$SCRIPT_DIR/test-all.sh" "$@"
+}
+
+run_quick_demo() {
+    echo -e "${YELLOW}🎬 Running quick demo tour...${NC}"
+    "$SCRIPT_DIR/quick-demo.sh" "$@"
+}
+
+show_project_summary() {
+    echo -e "${YELLOW}📊 Showing project summary...${NC}"
+    "$SCRIPT_DIR/project-summary.sh" "$@"
 }
 
 # Main command processing
 case "${1:-}" in
     "setup")
         setup_environment
+        ;;
+    "demo")
+        shift
+        run_quick_demo "$@"
+        ;;
+    "summary")
+        shift
+        show_project_summary "$@"
         ;;
     "registry")
         case "${2:-}" in
@@ -258,6 +287,10 @@ case "${1:-}" in
         ;;
     "run-all")
         run_all_examples
+        ;;
+    "test-all")
+        shift
+        run_test_suite "$@"
         ;;
     "cleanup")
         cleanup_demo

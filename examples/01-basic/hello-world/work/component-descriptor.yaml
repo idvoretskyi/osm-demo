@@ -1,0 +1,26 @@
+apiVersion: ocm.software/v3alpha1
+kind: ComponentDescriptor
+metadata:
+  name: github.com/ocm-demo/hello-world
+  version: v1.0.0
+  provider:
+    name: ocm-demo
+    labels:
+      - name: demo.ocm.software/purpose
+        value: learning
+spec:
+  repositories:
+    - name: default
+      type: ociRegistry
+      baseUrl: localhost:5000
+  resources:
+    - name: hello-message
+      type: plainText
+      version: v1.0.0
+      access:
+        type: localBlob
+        localReference: hello.txt
+        mediaType: text/plain
+      labels:
+        - name: demo.ocm.software/description
+          value: A simple hello world message

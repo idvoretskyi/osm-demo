@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transport-demo-app
+  labels:
+    app: transport-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transport-demo
+  template:
+    metadata:
+      labels:
+        app: transport-demo
+    spec:
+      containers:
+      - name: app
+        image: localhost:5001/transport-demo:v1.0.0
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transport-demo-service
+spec:
+  selector:
+    app: transport-demo
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP

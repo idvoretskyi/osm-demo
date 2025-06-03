@@ -1,0 +1,23 @@
+component:
+  componentReferences: []
+  creationTime: "2025-06-03T13:31:45Z"
+  name: github.com/ocm-demo/hello-world
+  provider: ocm-demo
+  repositoryContexts: []
+  resources:
+  - access:
+      localReference: sha256.9c2748c0a92d135ba09fa949bb0a918d5df9f651f703203e4e3188846338e3d4
+      mediaType: application/octet-stream
+      type: localBlob
+    digest:
+      hashAlgorithm: SHA-256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: 9c2748c0a92d135ba09fa949bb0a918d5df9f651f703203e4e3188846338e3d4
+    name: hello-message
+    relation: local
+    type: plainText
+    version: v1.0.0
+  sources: []
+  version: v1.0.0
+meta:
+  schemaVersion: v2

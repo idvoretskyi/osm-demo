@@ -61,7 +61,9 @@ install_ocm_cli() {
     print_status "Downloading OCM CLI ${LATEST_RELEASE} for ${OS}-${ARCH}..."
     
     # Download and install
-    DOWNLOAD_URL="https://github.com/open-component-model/ocm/releases/download/${LATEST_RELEASE}/ocm-${LATEST_RELEASE}-${OS}-${ARCH}.tar.gz"
+    # Fix version format for download URL
+    VERSION_NO_V=${LATEST_RELEASE#v}
+    DOWNLOAD_URL="https://github.com/open-component-model/ocm/releases/download/${LATEST_RELEASE}/ocm-${VERSION_NO_V}-${OS}-${ARCH}.tar.gz"
     TEMP_DIR=$(mktemp -d)
     
     curl -sL "$DOWNLOAD_URL" | tar -xz -C "$TEMP_DIR"
@@ -238,13 +240,13 @@ setup_local_registry() {
     docker run -d \
         --name local-registry \
         --restart=always \
-        -p 5000:5000 \
+        -p 5001:5000 \
         registry:2 >/dev/null
     
     # Wait for registry to be ready
     for i in {1..30}; do
-        if curl -f http://localhost:5000/v2/ >/dev/null 2>&1; then
-            print_success "Local registry is running on http://localhost:5000"
+        if curl -f http://localhost:5001/v2/ >/dev/null 2>&1; then
+            print_success "Local registry is running on http://localhost:5001"
             return 0
         fi
         sleep 1

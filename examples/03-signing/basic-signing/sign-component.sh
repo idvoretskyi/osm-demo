@@ -28,19 +28,15 @@ echo -e "${YELLOW}🔑 Step 1: Generating signing keys${NC}"
 cd keys
 
 # Generate RSA private key
-openssl genpkey -algorithm RSA -out private-key.pem -pkcs8 -aes256 \
-  -pass pass:demo-password
+openssl genpkey -algorithm RSA -out private-key.pem
 
 # Extract public key
-openssl pkey -in private-key.pem -passin pass:demo-password \
-  -pubout -out public-key.pem
+openssl pkey -in private-key.pem -pubout -out public-key.pem
 
 # Generate a second key pair for demo
-openssl genpkey -algorithm RSA -out dev-private-key.pem -pkcs8 -aes256 \
-  -pass pass:dev-password
+openssl genpkey -algorithm RSA -out dev-private-key.pem
 
-openssl pkey -in dev-private-key.pem -passin pass:dev-password \
-  -pubout -out dev-public-key.pem
+openssl pkey -in dev-private-key.pem -pubout -out dev-public-key.pem
 
 echo "✅ Generated signing keys:"
 ls -la *.pem
@@ -138,23 +134,26 @@ ocm create componentarchive github.com/ocm-demo/signed-app v1.0.0 \
   --file signed-component
 
 # Add resources
-ocm add resources signed-component signed-app/main.py \
+ocm add resources signed-component \
   --name application-code \
   --type file \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath signed-app/main.py
 
-ocm add resources signed-component signed-app/Dockerfile \
+ocm add resources signed-component \
   --name dockerfile \
   --type dockerfile \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath signed-app/Dockerfile
 
-ocm add resources signed-component signed-app/security-metadata.json \
+ocm add resources signed-component \
   --name security-metadata \
   --type json \
   --version v1.0.0 \
-  --access-type localBlob
+  --inputType file \
+  --inputPath signed-app/security-metadata.json
 
 echo "✅ Created component with security metadata"
 
@@ -164,16 +163,14 @@ echo -e "${YELLOW}✍️  Step 4: Signing the component${NC}"
 # Sign with first key (production key)
 ocm sign componentversions signed-component \
   --private-key ../keys/private-key.pem \
-  --private-key-password demo-password \
-  --signature-name production-signature
+  --signature production-signature
 
 echo "✅ Component signed with production key"
 
 # Add second signature (development approval)
 ocm sign componentversions signed-component \
   --private-key ../keys/dev-private-key.pem \
-  --private-key-password dev-password \
-  --signature-name development-signature
+  --signature development-signature
 
 echo "✅ Component signed with development key"
 
@@ -204,27 +201,26 @@ ocm verify signature signed-component development-signature \
 echo -e "${YELLOW}🚀 Step 7: Transporting signed component${NC}"
 
 # Start registry if not running
-if ! curl -s http://localhost:5000/v2/ > /dev/null 2>&1; then
+if ! curl -s http://localhost:5001/v2/ > /dev/null 2>&1; then
     echo "Starting registry..."
-    docker run -d -p 5000:5000 --name registry registry:2 || true
+    docker run -d -p 5001:5000 --name registry registry:2 || true
     sleep 2
 fi
 
 # Push signed component to registry
-ocm transfer componentarchive signed-component localhost:5000
+ocm transfer componentarchive signed-component http://localhost:5001
 
 echo "✅ Signed component pushed to registry"
 
 # Verify signatures are preserved in registry
 echo -e "${GREEN}Verifying signatures in registry:${NC}"
-ocm get componentversions localhost:5000//github.com/ocm-demo/signed-app:v1.0.0
+ocm get componentversions http://localhost:5001//github.com/ocm-demo/signed-app:v1.0.0
 
 # Step 8: Download and verify from registry
 echo -e "${YELLOW}📥 Step 8: Downloading and verifying from registry${NC}"
 
 # Download to new archive
-ocm transfer componentversion localhost:5000//github.com/ocm-demo/signed-app:v1.0.0 \
-  --type componentarchive downloaded-signed-component
+ocm transfer componentversion http://localhost:5001//github.com/ocm-demo/signed-app:v1.0.0 downloaded-signed-component
 
 # Verify signatures still work
 echo "Verifying signatures on downloaded component:"
@@ -238,14 +234,12 @@ ocm verify signature downloaded-signed-component development-signature \
 echo -e "${YELLOW}❌ Step 9: Demonstrating signature verification failure${NC}"
 
 # Generate wrong key
-openssl genpkey -algorithm RSA -out ../keys/wrong-key.pem -pkcs8 -aes256 \
-  -pass pass:wrong-password
-openssl pkey -in ../keys/wrong-key.pem -passin pass:wrong-password \
-  -pubout -out ../keys/wrong-public-key.pem
+openssl genpkey -algorithm RSA -out ../keys/wrong-key.pem
+openssl pkey -in ../keys/wrong-key.pem -pubout -out ../keys/wrong-public-key.pem
 
 echo "Attempting verification with wrong key (should fail):"
 ocm verify signature signed-component production-signature \
-  --public-key ../keys/wrong-public-key.pem 2>&1 | head -5 || \
+  --public-key production-signature=../keys/wrong-public-key.pem 2>&1 | head -5 || \
   echo "❌ Verification failed as expected with wrong key"
 
 echo -e "${GREEN}✨ Component signing demo completed successfully!${NC}"

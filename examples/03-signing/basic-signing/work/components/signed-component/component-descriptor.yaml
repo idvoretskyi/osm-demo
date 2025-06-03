@@ -1,0 +1,66 @@
+component:
+  componentReferences: []
+  creationTime: "2025-06-03T13:31:55Z"
+  name: github.com/ocm-demo/signed-app
+  provider: security-team
+  repositoryContexts: []
+  resources:
+  - access:
+      localReference: sha256.a7cc77bbf39a6d5beee28597b81e156175decf11d65aa68800b679cf92398dfd
+      mediaType: application/octet-stream
+      type: localBlob
+    digest:
+      hashAlgorithm: SHA-256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: a7cc77bbf39a6d5beee28597b81e156175decf11d65aa68800b679cf92398dfd
+    name: application-code
+    relation: local
+    type: file
+    version: v1.0.0
+  - access:
+      localReference: sha256.61351b47802cf643b932fb151497e83faaf08f1d09dd287e5266bb66e54f8dd3
+      mediaType: application/octet-stream
+      type: localBlob
+    digest:
+      hashAlgorithm: SHA-256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: 61351b47802cf643b932fb151497e83faaf08f1d09dd287e5266bb66e54f8dd3
+    name: dockerfile
+    relation: local
+    type: dockerfile
+    version: v1.0.0
+  - access:
+      localReference: sha256.6abcc83f44dc1fb1918e4ac267bd8635df9a2435fb04a3c50cab3c877469564a
+      mediaType: application/octet-stream
+      type: localBlob
+    digest:
+      hashAlgorithm: SHA-256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: 6abcc83f44dc1fb1918e4ac267bd8635df9a2435fb04a3c50cab3c877469564a
+    name: security-metadata
+    relation: local
+    type: json
+    version: v1.0.0
+  sources: []
+  version: v1.0.0
+meta:
+  schemaVersion: v2
+signatures:
+- digest:
+    hashAlgorithm: SHA-256
+    normalisationAlgorithm: jsonNormalisation/v3
+    value: bbad85fd731589c565bb573829f9ce40f659ccd4284d5577b54c4d6e236243de
+  name: production-signature
+  signature:
+    algorithm: RSASSA-PKCS1-V1_5
+    mediaType: application/vnd.ocm.signature.rsa
+    value: 67ef956a5c4052743f237778ce9cfa93d2d9be49a1fe24d3a530ae83a3a0d7147d041301d47cd0107e28c9a2f0491ec10f3fb025a27c1a0984521802ae58c89034237b81757bcd51c3424fd07b2522fe5e41315866e348dfff0655b4033a5706ba509662505e0efc48421d331713fb963ddff3324df4f1b7b1ec15d7eb50526c049aea92a95d3ada082098d425dd6360b539d1f563d3ad145dee42c0d791663ff9053f1b80623e1b63d95a01f4177f02948a7e6c7b206f03712c0b721dc03d04b5bbbcf715230ca84dd88960bcade00c8cbba55937f846cc3b53ae3f58b344149cc2574972906d0fb89b7df527c38be91a9763b9480f47e2863b0bba53a6697c
+- digest:
+    hashAlgorithm: SHA-256
+    normalisationAlgorithm: jsonNormalisation/v3
+    value: bbad85fd731589c565bb573829f9ce40f659ccd4284d5577b54c4d6e236243de
+  name: development-signature
+  signature:
+    algorithm: RSASSA-PKCS1-V1_5
+    mediaType: application/vnd.ocm.signature.rsa
+    value: a8b95c4829f5ed6b91277ff7884f595ca6d37486c9c23c7a963ca88278d37ead3e708bca55fefbae4a7a0a9e39d9f4cc02e509696e3bd1fe29b0be73ba56fbe9e38eae65b365a29de3954d0225e6b7f6ad13251acc231f32f5955e6143c0cc84deb674e49ff3c331a57b6dc950c374acb48bacfd63b4dc14211b42757c74bddc490b5d123d9e58c7d12b0d0753c4bae08b0a5c8f207dac398027a9aaab4be89c5ea03258c0c1282d496f98f0c983e5e806055684d0ce085e58c6b2188b6b8b9fd09e1cf36c6a487379b50cc6e7916bc77c52384574e96fb482bff4aba2a5986296dd029acf212b4a6e976b552e2d1f1bcc9ae95bd6b61ee2c7b41e9d61241cf0
