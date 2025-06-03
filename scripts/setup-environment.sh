@@ -236,22 +236,24 @@ setup_local_registry() {
         docker rm -f local-registry >/dev/null 2>&1
     fi
     
-    # Start new registry
+    # Start new registry and log output
     docker run -d \
         --name local-registry \
         --restart=always \
         -p 5001:5000 \
-        registry:2 >/dev/null
+        registry:2 >/tmp/local-registry.log 2>&1
+
+    cat /tmp/local-registry.log
     
-    # Wait for registry to be ready
-    for i in {1..30}; do
+    # Wait for registry to be ready (increase wait to 60 seconds)
+    for i in {1..60}; do
         if curl -f http://localhost:5001/v2/ >/dev/null 2>&1; then
-            print_success "Local registry is running on http://localhost:5001"
+            print_success "Local registry is running on http://localhost:5001 (ready after ${i} seconds)"
             return 0
         fi
         sleep 1
     done
-    
+
     print_error "Failed to start local registry"
     exit 1
 }
