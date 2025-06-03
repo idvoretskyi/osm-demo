@@ -50,6 +50,7 @@ jobs:
         ./scripts/setup-environment.sh
         
     - name: Run ${{ matrix.test-suite.name }}
+      timeout-minutes: 20
       run: |
         ./scripts/test-all.sh ${{ matrix.test-suite.args }}
         
@@ -72,6 +73,7 @@ jobs:
         ./scripts/setup-environment.sh
         
     - name: Run quick demo (non-interactive)
+      timeout-minutes: 10
       run: |
         ./scripts/quick-demo.sh --non-interactive
 
@@ -106,6 +108,7 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Validate documentation
+      timeout-minutes: 5
       run: |
         # Check that all examples have README files
         for dir in examples/*/; do
