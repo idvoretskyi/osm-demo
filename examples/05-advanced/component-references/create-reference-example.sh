@@ -138,7 +138,7 @@ ocm create componentarchive acme.corp/user-app v2.0.0 \
   --file app-component
 
 # Add component reference to utils library
-ocm add componentversions app-component \
+ocm add references app-component \
   --name utils-library \
   --component acme.corp/utils \
   --version v1.0.0
