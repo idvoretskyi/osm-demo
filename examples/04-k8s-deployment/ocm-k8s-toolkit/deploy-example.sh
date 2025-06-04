@@ -17,6 +17,31 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}☸️  OCM K8s Toolkit Deployment Demo${NC}"
 
+# Check for help or verify-only flags
+if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+    echo "Usage: $0 [--verify-only]"
+    echo ""
+    echo "Options:"
+    echo "  --verify-only    Only verify cluster readiness, don't deploy"
+    echo "  --help, -h       Show this help"
+    echo ""
+    echo "This script demonstrates deploying OCM components to Kubernetes."
+    echo "It requires a running Kubernetes cluster (automatically sets up if needed)."
+    exit 0
+fi
+
+if [[ "$1" == "--verify-only" ]]; then
+    echo "Running cluster verification only..."
+    if check_cluster_ready; then
+        echo -e "${GREEN}✅ Cluster verification passed - ready for deployment${NC}"
+        exit 0
+    else
+        echo -e "${RED}❌ Cluster verification failed${NC}"
+        show_troubleshooting_help
+        exit 1
+    fi
+fi
+
 # Clean and create work directory
 rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR"/{manifests,components}
@@ -24,6 +49,38 @@ cd "$WORK_DIR"
 
 # Step 1: Check cluster readiness
 echo -e "${YELLOW}🔍 Step 1: Checking cluster readiness${NC}"
+
+# Troubleshooting function
+show_troubleshooting_help() {
+    echo -e "${BLUE}🔧 Troubleshooting Help${NC}"
+    echo "======================"
+    echo ""
+    echo -e "${YELLOW}Common issues and solutions:${NC}"
+    echo ""
+    echo "1. No kubectl context available:"
+    echo "   - Ensure a Kubernetes cluster is running"
+    echo "   - Run: ../setup-cluster.sh"
+    echo "   - Check: kubectl config get-contexts"
+    echo ""
+    echo "2. kind not installed:"
+    echo "   - macOS: brew install kind"
+    echo "   - Linux: curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64"
+    echo "   - Windows: see https://kind.sigs.k8s.io/docs/user/quick-start/"
+    echo ""
+    echo "3. Docker not running:"
+    echo "   - Start Docker Desktop"
+    echo "   - Check: docker ps"
+    echo ""
+    echo "4. Cluster setup failed:"
+    echo "   - Clean up: kind delete cluster --name ocm-demo"
+    echo "   - Retry: ../setup-cluster.sh"
+    echo ""
+    echo "5. kubectl context issues:"
+    echo "   - Set context: kubectl config use-context kind-ocm-demo"
+    echo "   - Check config: kubectl config current-context"
+    echo ""
+    echo -e "${BLUE}For more help, see: docs/troubleshooting.md${NC}"
+}
 
 # Enhanced cluster readiness check for CI environments
 check_cluster_ready() {
@@ -81,14 +138,57 @@ check_cluster_ready() {
 }
 
 if ! check_cluster_ready; then
-    echo -e "${RED}❌ Kubernetes cluster not accessible. Run ../setup-cluster.sh first.${NC}"
+    echo -e "${RED}❌ Kubernetes cluster not accessible.${NC}"
     echo ""
-    echo "Debug information:"
-    echo "KUBECONFIG: ${KUBECONFIG:-$HOME/.kube/config}"
-    echo "Current directory: $(pwd)"
-    echo "Available kind clusters:"
-    kind get clusters 2>/dev/null || echo "No kind clusters found"
-    exit 1
+    echo -e "${YELLOW}🚀 Attempting to set up a cluster automatically...${NC}"
+    
+    # Check if kind is available
+    if ! command -v kind &> /dev/null; then
+        echo -e "${RED}❌ kind is not installed. Please install it first:${NC}"
+        echo "   macOS: brew install kind"
+        echo "   Linux: see https://kind.sigs.k8s.io/docs/user/quick-start/"
+        echo ""
+        show_troubleshooting_help
+        exit 1
+    fi
+    
+    # Check if Docker is available
+    if ! command -v docker &> /dev/null; then
+        echo -e "${RED}❌ Docker is not available. Please install Docker first.${NC}"
+        show_troubleshooting_help
+        exit 1
+    fi
+    
+    # Try to set up cluster automatically
+    echo "Running cluster setup script..."
+    if ! (cd "$SCRIPT_DIR/.." && ./setup-cluster.sh); then
+        echo -e "${RED}❌ Failed to set up cluster automatically.${NC}"
+        echo ""
+        echo "Please try manually:"
+        echo "   cd ../.. && ./examples/04-k8s-deployment/setup-cluster.sh"
+        exit 1
+    fi
+    
+    # Wait a moment for cluster to be ready
+    echo "Waiting for cluster to be ready..."
+    sleep 5
+    
+    # Re-check cluster readiness
+    if ! check_cluster_ready; then
+        echo -e "${RED}❌ Cluster setup completed but cluster is still not accessible.${NC}"
+        echo ""
+        echo "Debug information:"
+        echo "KUBECONFIG: ${KUBECONFIG:-$HOME/.kube/config}"
+        echo "Current directory: $(pwd)"
+        echo "Available kind clusters:"
+        kind get clusters 2>/dev/null || echo "No kind clusters found"
+        echo ""
+        echo "Try setting the kubectl context manually:"
+        echo "   kubectl config use-context kind-ocm-demo"
+        exit 1
+    fi
+    
+    echo -e "${GREEN}✅ Cluster setup successful!${NC}"
 fi
 
 echo -e "${GREEN}✅ Kubernetes cluster is accessible${NC}"

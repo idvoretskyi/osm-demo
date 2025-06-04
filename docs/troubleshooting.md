@@ -161,68 +161,178 @@ Error: signature verification failed
 
 ## ☸️ Kubernetes Deployment Issues
 
-### CRD Installation Problems
+### No kubectl Context Available
 
-**Problem**: OCM CRDs not installed
-```bash
-Error: the server could not find the requested resource (componentversions.delivery.ocm.software)
+**Problem**: 
+```
+Step 2: Checking kubectl configuration
+❌ No kubectl context available
+```
+
+**Root Cause**: No Kubernetes cluster is running or kubectl is not configured properly.
+
+**Solution**:
+1. **Set up a new cluster:**
+   ```bash
+   cd examples/04-k8s-deployment
+   ./setup-cluster.sh
+   ```
+
+2. **Check existing clusters:**
+   ```bash
+   kind get clusters
+   kubectl config get-contexts
+   ```
+
+3. **Set the correct context:**
+   ```bash
+   kubectl config use-context kind-ocm-demo
+   ```
+
+### Prerequisites Missing
+
+**Problem**: 
+```
+❌ kind is not installed. Please install it first
 ```
 
 **Solution**:
-1. Check if cluster is running:
-   ```bash
-   kubectl cluster-info
-   ```
-2. Install OCM CRDs manually:
-   ```bash
-   kubectl apply -k https://github.com/open-component-model/ocm-k8s-toolkit/config/crd
-   ```
-3. Verify CRDs are installed:
-   ```bash
-   kubectl get crd | grep ocm
-   ```
 
-### Flux Installation Issues
-
-**Problem**: Flux controllers not running
+**macOS (using Homebrew):**
 ```bash
-Error: flux-system namespace not found
+brew install kind
+```
+
+**macOS (manual):**
+```bash
+# For Intel Macs
+[ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-darwin-amd64
+# For M1/M2 Macs  
+[ $(uname -m) = arm64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-darwin-arm64
+chmod +x ./kind
+sudo mv ./kind /usr/local/bin/kind
+```
+
+**Linux:**
+```bash
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+chmod +x ./kind
+sudo mv ./kind /usr/local/bin/kind
+```
+
+### Docker Not Available
+
+**Problem**:
+```
+❌ Docker is not available. Please install Docker first.
 ```
 
 **Solution**:
-1. Check Flux installation:
+1. **Install Docker Desktop:**
+   - macOS: Download from https://www.docker.com/products/docker-desktop
+   - Windows: Download from https://www.docker.com/products/docker-desktop
+   - Linux: Follow instructions at https://docs.docker.com/engine/install/
+
+2. **Start Docker:**
+   - macOS/Windows: Launch Docker Desktop
+   - Linux: `sudo systemctl start docker`
+
+3. **Verify Docker is running:**
    ```bash
-   flux check
-   ```
-2. Install Flux manually:
-   ```bash
-   flux install
-   ```
-3. Wait for controllers to be ready:
-   ```bash
-   kubectl wait --for=condition=ready pod -l app=helm-controller -n flux-system --timeout=300s
+   docker ps
    ```
 
-### Component Deployment Fails
+### Cluster Setup Failures
 
-**Problem**: ComponentVersion not found
-```bash
-Error: componentversion not found in repository
+**Problem**: Cluster creation fails with various errors.
+
+**Solution**:
+1. **Clean up existing clusters:**
+   ```bash
+   kind delete cluster --name ocm-demo
+   docker system prune -f
+   ```
+
+2. **Check Docker resources:**
+   - Ensure Docker has enough memory (4GB+ recommended)
+   - Ensure Docker has enough disk space (10GB+ free)
+
+3. **Retry cluster creation:**
+   ```bash
+   ./setup-cluster.sh
+   ```
+
+### Nodes Not Ready
+
+**Problem**:
+```
+❌ No ready nodes found
 ```
 
 **Solution**:
-1. Verify component is in registry:
+1. **Wait for nodes to be ready:**
    ```bash
-   ocm get components localhost:5000/demo//acme.org/hello-world:v1.0.0
+   kubectl wait --for=condition=Ready nodes --all --timeout=300s
    ```
-2. Check if registry is accessible from cluster:
+
+2. **Check node status:**
    ```bash
-   kubectl run test --rm -i --tty --image=curlimages/curl -- curl http://host.docker.internal:5000/v2/_catalog
+   kubectl get nodes -o wide
+   kubectl describe nodes
    ```
-3. Update ComponentVersion resource with correct repository URL:
+
+### OCM CRDs Not Found
+
+**Problem**:
+```
+error validating data: ValidationError(ComponentVersion.spec): unknown field "component"
+```
+
+**Solution**:
+1. **Install OCM CRDs:**
    ```bash
-   kubectl patch componentversion hello-world -p '{"spec":{"repository":"localhost:5000/demo"}}' --type=merge
+   kubectl apply -f ocm-crds.yaml
    ```
+
+2. **Verify CRDs are installed:**
+   ```bash
+   kubectl get crd | grep ocm.software
+   ```
+
+### Registry Connectivity Issues
+
+**Problem**:
+```
+❌ Registry failed to start within 30 seconds
+```
+
+**Solution**:
+1. **Check if port is already in use:**
+   ```bash
+   lsof -i :5004
+   ```
+
+2. **Stop conflicting containers:**
+   ```bash
+   docker ps --filter "publish=5004" --format "{{.Names}}" | xargs -r docker stop
+   ```
+
+3. **Clean up and retry:**
+   ```bash
+   docker system prune -f
+   ./deploy-example.sh
+   ```
+
+### Automatic Cluster Setup
+
+The enhanced `deploy-example.sh` script now includes automatic cluster setup:
+
+1. **Detects missing cluster** and attempts automatic setup
+2. **Provides detailed error messages** with troubleshooting steps
+3. **Includes prerequisite checks** for kind and Docker
+4. **Shows troubleshooting help** when setup fails
+
+If automatic setup fails, the script will display comprehensive troubleshooting information to help resolve the issue manually.
 
 ## 🛠️ Utility Script Issues
 

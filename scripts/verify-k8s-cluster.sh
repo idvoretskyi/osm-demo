@@ -122,8 +122,28 @@ show_debug_info() {
     echo "  USER: ${USER:-$(whoami)}"
     
     echo ""
-    echo "Available kind clusters:"
-    kind get clusters 2>/dev/null || echo "  No kind clusters found or kind not available"
+    echo "Prerequisites check:"
+    if command -v kind &> /dev/null; then
+        echo "  ✅ kind is available: $(kind version | head -1)"
+        echo ""
+        echo "Available kind clusters:"
+        kind get clusters 2>/dev/null || echo "  No kind clusters found"
+    else
+        echo "  ❌ kind is not installed"
+        echo "     Install with: brew install kind (macOS) or see https://kind.sigs.k8s.io/docs/user/quick-start/"
+    fi
+    
+    if command -v docker &> /dev/null; then
+        echo "  ✅ Docker is available: $(docker --version)"
+    else
+        echo "  ❌ Docker is not available"
+    fi
+    
+    if command -v kubectl &> /dev/null; then
+        echo "  ✅ kubectl is available: $(kubectl version --client --short 2>/dev/null || echo 'version info unavailable')"
+    else
+        echo "  ❌ kubectl is not available"
+    fi
     
     echo ""
     echo "Docker containers (filtered for kind):"
