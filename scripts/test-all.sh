@@ -328,92 +328,79 @@ test_k8s_examples() {
     # Clean up registry containers before K8s tests
     cleanup_registry_containers
     
-    # Function to verify cluster readiness with retries
-    verify_cluster_ready() {
-        local max_attempts=10
+    # Simple cluster setup with basic verification
+    setup_k8s_cluster() {
+        local max_attempts=3
         local attempt=1
-        local wait_time=5
         
         while [[ $attempt -le $max_attempts ]]; do
-            log_info "Checking cluster readiness (attempt $attempt/$max_attempts)..."
+            log_info "K8s cluster setup attempt $attempt/$max_attempts..."
             
-            # Use the dedicated verification script for comprehensive checking
-            if "$PROJECT_ROOT/scripts/verify-k8s-cluster.sh" &> /dev/null; then
-                log_success "Cluster verification passed"
-                return 0
+            # Clean up any existing cluster
+            if kind get clusters 2>/dev/null | grep -q "ocm-demo"; then
+                log_info "Cleaning up existing cluster..."
+                kind delete cluster --name ocm-demo &>/dev/null || true
+                sleep 3
             fi
             
-            if [[ $attempt -eq $max_attempts ]]; then
-                log_error "Cluster failed to become ready after $max_attempts attempts"
-                log_info "Running detailed cluster verification for debugging..."
-                "$PROJECT_ROOT/scripts/verify-k8s-cluster.sh" || true
-                return 1
+            # Set up fresh cluster using existing setup script
+            cd "$PROJECT_ROOT"
+            if ./examples/04-k8s-deployment/setup-cluster.sh; then
+                log_success "Cluster setup completed on attempt $attempt"
+                
+                # Brief wait for cluster stabilization
+                sleep 5
+                
+                # Basic verification - cluster exists and kubectl works
+                if kind get clusters 2>/dev/null | grep -q "ocm-demo" && \
+                   kubectl cluster-info --request-timeout=10s &>/dev/null; then
+                    log_success "Cluster is accessible and ready"
+                    return 0
+                else
+                    log_warning "Cluster setup completed but verification failed"
+                fi
+            else
+                log_warning "Cluster setup failed on attempt $attempt"
             fi
             
-            log_info "Cluster not ready, waiting ${wait_time}s before retry..."
-            sleep $wait_time
             attempt=$((attempt + 1))
+            if [[ $attempt -le $max_attempts ]]; then
+                log_info "Retrying cluster setup in 10 seconds..."
+                sleep 10
+            fi
         done
         
+        log_error "Failed to set up K8s cluster after $max_attempts attempts"
         return 1
     }
     
-    # Check if cluster is accessible, if not set it up
-    if ! kubectl cluster-info &> /dev/null; then
-        log_info "Setting up Kubernetes cluster..."
-        
-        # Run cluster setup with more detailed logging
-        cd "$PROJECT_ROOT"
-        if ! "./examples/04-k8s-deployment/setup-cluster.sh"; then
-            log_error "Failed to set up Kubernetes cluster"
-            return 1
-        fi
-        
-        log_success "Kubernetes cluster setup script completed"
-        
-        # Wait for cluster to be fully ready
-        if ! verify_cluster_ready; then
-            log_error "Cluster setup completed but cluster is not ready"
-            return 1
-        fi
-    else
-        log_info "Using existing Kubernetes cluster"
-        
-        # Still verify it's fully ready
-        if ! verify_cluster_ready; then
-            log_warning "Existing cluster is not ready, attempting to restart..."
-            
-            # Try to restart the cluster
-            cd "$PROJECT_ROOT"
-            if ! "./examples/04-k8s-deployment/setup-cluster.sh"; then
-                log_error "Failed to restart Kubernetes cluster"
-                return 1
-            fi
-            
-            if ! verify_cluster_ready; then
-                log_error "Cluster restart completed but cluster is still not ready"
-                return 1
-            fi
-        fi
-    fi
-    
-    # Set kubectl context explicitly for the test
-    local kubectl_context
-    kubectl_context=$(kubectl config current-context 2>/dev/null || echo "")
-    if [[ -n "$kubectl_context" ]]; then
-        log_info "Using kubectl context: $kubectl_context"
-        export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}"
-    else
-        log_error "No kubectl context available"
+    # Set up cluster
+    if ! setup_k8s_cluster; then
+        log_error "Unable to establish Kubernetes cluster for testing"
         return 1
     fi
     
-    # Run the deployment test with explicit context verification
-    run_test "K8s - OCM Toolkit Deployment" \
-        "kubectl cluster-info && ./examples/04-k8s-deployment/ocm-k8s-toolkit/deploy-example.sh" \
+    # Run the deployment test directly - the deploy script now handles all context management internally
+    log_info "Running Kubernetes deployment test..."
+    
+    # The deploy script now contains comprehensive context management, so we just run it directly
+    if run_test "K8s - OCM Toolkit Deployment" \
+        "./examples/04-k8s-deployment/ocm-k8s-toolkit/deploy-example.sh" \
         "$PROJECT_ROOT" \
         600 \
-        2
+        1; then
+        log_success "Kubernetes deployment test completed successfully"
+        test_result=0
+    else
+        log_error "Kubernetes deployment test failed"
+        test_result=1
+    fi
+    
+    # Clean up cluster
+    log_info "Cleaning up cluster..."
+    kind delete cluster --name ocm-demo 2>/dev/null || log_warning "Could not delete cluster"
+    
+    return $test_result
 }
 
 # Print test summary

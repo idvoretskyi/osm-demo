@@ -47,8 +47,136 @@ rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR"/{manifests,components}
 cd "$WORK_DIR"
 
-# Step 1: Check cluster readiness
-echo -e "${YELLOW}🔍 Step 1: Checking cluster readiness${NC}"
+# Comprehensive Kubernetes context validation and recovery function
+ensure_k8s_connectivity() {
+    echo "=== Kubernetes Context Validation and Recovery ==="
+    
+    # Set KUBECONFIG with multiple fallback options
+    if [[ -n "${KUBECONFIG:-}" ]]; then
+        echo "Using provided KUBECONFIG: $KUBECONFIG"
+    elif kind get kubeconfig-path --name=ocm-demo >/dev/null 2>&1; then
+        export KUBECONFIG="$(kind get kubeconfig-path --name=ocm-demo)"
+        echo "Using Kind kubeconfig: $KUBECONFIG"
+    else
+        export KUBECONFIG="$HOME/.kube/config"
+        echo "Using default kubeconfig: $KUBECONFIG"
+    fi
+    
+    # Verify kubeconfig file exists
+    if [[ ! -f "$KUBECONFIG" ]]; then
+        echo "❌ KUBECONFIG file does not exist: $KUBECONFIG"
+        return 1
+    fi
+    
+    echo "✅ KUBECONFIG file exists and is readable"
+    
+    # Update kubeconfig from kind to ensure it's current
+    echo "Updating kubeconfig from kind cluster..."
+    if ! kind export kubeconfig --name=ocm-demo; then
+        echo "❌ Failed to export kubeconfig from kind cluster"
+        return 1
+    fi
+    
+    echo "✅ Kubeconfig updated from kind cluster"
+    
+    # Set context with multiple attempts
+    local context_attempts=0
+    local max_context_attempts=5
+    
+    while [[ $context_attempts -lt $max_context_attempts ]]; do
+        if kubectl config use-context kind-ocm-demo 2>/dev/null; then
+            echo "✅ Successfully set context to kind-ocm-demo"
+            break
+        fi
+        
+        context_attempts=$((context_attempts + 1))
+        echo "Context switch attempt $context_attempts/$max_context_attempts failed, retrying..."
+        
+        # Try to refresh kubeconfig
+        kind export kubeconfig --name=ocm-demo 2>/dev/null || true
+        sleep 1
+    done
+    
+    if [[ $context_attempts -eq $max_context_attempts ]]; then
+        echo "❌ Failed to set kubectl context after $max_context_attempts attempts"
+        echo "Available contexts:"
+        kubectl config get-contexts 2>/dev/null || echo "No contexts available"
+        return 1
+    fi
+    
+    # Verify cluster connectivity with retries
+    echo "Verifying cluster connectivity..."
+    local connectivity_attempts=0
+    local max_connectivity_attempts=5
+    
+    while [[ $connectivity_attempts -lt $max_connectivity_attempts ]]; do
+        if kubectl cluster-info --request-timeout=10s >/dev/null 2>&1; then
+            echo "✅ Cluster connectivity verified"
+            break
+        fi
+        
+        connectivity_attempts=$((connectivity_attempts + 1))
+        echo "Connectivity attempt $connectivity_attempts/$max_connectivity_attempts failed, retrying..."
+        
+        # Try to refresh connection
+        kind export kubeconfig --name=ocm-demo 2>/dev/null || true
+        kubectl config use-context kind-ocm-demo 2>/dev/null || true
+        sleep 2
+    done
+    
+    if [[ $connectivity_attempts -eq $max_connectivity_attempts ]]; then
+        echo "❌ Failed to establish cluster connectivity after $max_connectivity_attempts attempts"
+        echo "=== Debug Information ==="
+        echo "KUBECONFIG: $KUBECONFIG"
+        echo "Current context: $(kubectl config current-context 2>/dev/null || echo 'none')"
+        echo "Available contexts:"
+        kubectl config get-contexts 2>/dev/null || echo "No contexts available"
+        echo "Kind clusters:"
+        kind get clusters 2>/dev/null || echo "No kind clusters"
+        echo "Kubectl cluster-info (raw output):"
+        kubectl cluster-info 2>&1 || echo "kubectl cluster-info failed"
+        echo "======================="
+        return 1
+    fi
+    
+    # Final verification tests
+    echo "Performing final verification tests..."
+    
+    # Test 1: Get nodes
+    if ! kubectl get nodes --request-timeout=10s >/dev/null 2>&1; then
+        echo "❌ Failed to get nodes"
+        return 1
+    fi
+    echo "✅ Successfully retrieved nodes"
+    
+    # Test 2: Check API server
+    if ! kubectl get --raw='/api/v1' >/dev/null 2>&1; then
+        echo "❌ API server accessibility test failed"
+        return 1
+    fi
+    echo "✅ API server is accessible"
+    
+    # Show final status
+    echo "=== Final Kubernetes Status ==="
+    echo "Context: $(kubectl config current-context)"
+    echo "KUBECONFIG: $KUBECONFIG"
+    echo "Nodes:"
+    kubectl get nodes 2>/dev/null || echo "Failed to get nodes"
+    echo "=============================="
+    
+    return 0
+}
+
+# Step 1: Comprehensive Kubernetes Context Management and Cluster Readiness
+echo -e "${YELLOW}🔍 Step 1: Kubernetes Context Management and Cluster Readiness${NC}"
+
+# Ensure Kubernetes connectivity before proceeding
+if ! ensure_k8s_connectivity; then
+    echo "❌ Failed to establish Kubernetes connectivity. Cannot proceed with deployment."
+    exit 1
+fi
+
+echo "✅ Kubernetes connectivity established. Proceeding with deployment..."
 
 # Troubleshooting function
 show_troubleshooting_help() {
