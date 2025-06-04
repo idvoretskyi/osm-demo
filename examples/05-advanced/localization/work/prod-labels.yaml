@@ -1,9 +1,0 @@
-labels:
-  - name: environment
-    value: production
-  - name: deployment.type
-    value: high-availability
-  - name: security.level
-    value: high
-  - name: monitoring.enabled
-    value: "true"

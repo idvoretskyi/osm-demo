@@ -25,18 +25,69 @@ cd "$WORK_DIR"
 # Step 1: Ensure registries are running
 echo -e "${YELLOW}🐳 Step 1: Setting up registries${NC}"
 
+# Generate unique container names to avoid conflicts
+TIMESTAMP=$(date +%s)
+SOURCE_REGISTRY_NAME="source-registry-${TIMESTAMP}"
+TARGET_REGISTRY_NAME="target-registry-${TIMESTAMP}"
+
 # Start source registry (port 5001)
 if ! curl -s http://localhost:5001/v2/ > /dev/null 2>&1; then
     echo "Starting source registry on port 5001..."
-    docker run -d -p 5001:5000 --name source-registry registry:2 || true
-    sleep 2
+    
+    # Clean up any existing containers on port 5001
+    docker ps --filter "publish=5001" --format "{{.Names}}" | xargs -r docker stop 2>/dev/null || true
+    docker ps -a --filter "publish=5001" --format "{{.Names}}" | xargs -r docker rm 2>/dev/null || true
+    docker rm -f source-registry 2>/dev/null || true
+    
+    if docker run -d -p 5001:5000 --name "$SOURCE_REGISTRY_NAME" registry:2; then
+        echo "Started source registry: $SOURCE_REGISTRY_NAME"
+        
+        # Wait for source registry to be ready
+        for i in {1..30}; do
+            if curl -f -s -m 5 http://localhost:5001/v2/ >/dev/null 2>&1; then
+                echo "✅ Source registry ready"
+                break
+            fi
+            if [[ $i -eq 30 ]]; then
+                echo "❌ Source registry failed to start"
+                exit 1
+            fi
+            sleep 1
+        done
+    else
+        echo "❌ Failed to start source registry"
+        exit 1
+    fi
 fi
 
 # Start target registry (port 5002)
 if ! curl -s http://localhost:5002/v2/ > /dev/null 2>&1; then
     echo "Starting target registry on port 5002..."
-    docker run -d -p 5002:5000 --name target-registry registry:2 || true
-    sleep 2
+    
+    # Clean up any existing containers on port 5002
+    docker ps --filter "publish=5002" --format "{{.Names}}" | xargs -r docker stop 2>/dev/null || true
+    docker ps -a --filter "publish=5002" --format "{{.Names}}" | xargs -r docker rm 2>/dev/null || true
+    docker rm -f target-registry 2>/dev/null || true
+    
+    if docker run -d -p 5002:5000 --name "$TARGET_REGISTRY_NAME" registry:2; then
+        echo "Started target registry: $TARGET_REGISTRY_NAME"
+        
+        # Wait for target registry to be ready
+        for i in {1..30}; do
+            if curl -f -s -m 5 http://localhost:5002/v2/ >/dev/null 2>&1; then
+                echo "✅ Target registry ready"
+                break
+            fi
+            if [[ $i -eq 30 ]]; then
+                echo "❌ Target registry failed to start"
+                exit 1
+            fi
+            sleep 1
+        done
+    else
+        echo "❌ Failed to start target registry"
+        exit 1
+    fi
 fi
 
 echo "✅ Registries are running"

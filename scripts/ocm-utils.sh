@@ -57,13 +57,28 @@ start_registry() {
     # Remove if exists but not running
     docker rm -f local-registry 2>/dev/null || true
     
-    # Start registry
-    docker run -d -p 5001:5000 --name local-registry registry:2
+    # Also clean up any conflicting containers on port 5001
+    docker ps --filter "publish=5001" --format "{{.Names}}" | xargs -r docker stop 2>/dev/null || true
+    docker ps -a --filter "publish=5001" --format "{{.Names}}" | xargs -r docker rm 2>/dev/null || true
     
-    # Wait for registry to be ready
-    sleep 3
-    if curl -s http://localhost:5001/v2/ > /dev/null; then
-        echo -e "${GREEN}✅ Registry started successfully on localhost:5001${NC}"
+    # Start registry
+    if docker run -d -p 5001:5000 --name local-registry registry:2; then
+        echo "Started registry container: local-registry"
+        
+        # Wait for registry to be ready with better error handling
+        echo "Waiting for registry to be ready..."
+        for i in {1..30}; do
+            if curl -f -s -m 5 http://localhost:5001/v2/ >/dev/null 2>&1; then
+                echo -e "${GREEN}✅ Registry started successfully on localhost:5001${NC}"
+                return 0
+            fi
+            if [[ $i -eq 30 ]]; then
+                echo -e "${RED}❌ Registry failed to start within 30 seconds${NC}"
+                docker logs local-registry || true
+                exit 1
+            fi
+            sleep 1
+        done
     else
         echo -e "${RED}❌ Failed to start registry${NC}"
         exit 1

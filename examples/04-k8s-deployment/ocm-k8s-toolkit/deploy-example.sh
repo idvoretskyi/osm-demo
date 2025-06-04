@@ -206,12 +206,47 @@ echo -e "${YELLOW}🚀 Step 3: Pushing component to registry${NC}"
 # Ensure registry is running
 if ! curl -s http://localhost:5004/v2/ > /dev/null 2>&1; then
     echo "Starting local registry..."
-    docker run -d -p 5004:5000 --name registry registry:2 || true
-    sleep 2
+    
+    # Generate unique container name to avoid conflicts
+    TIMESTAMP=$(date +%s)
+    REGISTRY_NAME="k8s-deploy-registry-${TIMESTAMP}"
+    
+    # Stop any existing registry containers on port 5004
+    docker ps --filter "publish=5004" --format "{{.Names}}" | xargs -r docker stop 2>/dev/null || true
+    docker ps -a --filter "publish=5004" --format "{{.Names}}" | xargs -r docker rm 2>/dev/null || true
+    
+    # Remove generic "registry" container if it exists (common conflict)
+    docker rm -f registry 2>/dev/null || true
+    
+    # Start registry with unique name
+    if docker run -d -p 5004:5000 --name "$REGISTRY_NAME" registry:2; then
+        echo "Started registry container: $REGISTRY_NAME"
+        
+        # Wait for registry to be ready
+        echo "Waiting for registry to be ready..."
+        for i in {1..30}; do
+            if curl -f -s -m 5 http://localhost:5004/v2/ >/dev/null 2>&1; then
+                echo "✅ Registry is ready"
+                break
+            fi
+            if [[ $i -eq 30 ]]; then
+                echo "❌ Registry failed to start within 30 seconds"
+                docker logs "$REGISTRY_NAME" || true
+                exit 1
+            fi
+            sleep 1
+        done
+    else
+        echo "❌ Failed to start registry"
+        exit 1
+    fi
 fi
 
+# Configure OCM to use HTTP for localhost registries
+export OCM_CONFIG_PLAIN_HTTP=localhost:5004
+
 # Push component
-ocm transfer componentarchive k8s-component localhost:5004
+ocm transfer componentarchive k8s-component http://localhost:5004
 
 echo "✅ Component pushed to registry"
 
@@ -230,7 +265,7 @@ spec:
   componentVersion:
     component: github.com/ocm-demo/k8s-app
     version: v1.0.0
-    repository: localhost:5004
+    repository: http://localhost:5004
   configuration:
     target:
       namespace: ocm-demos
@@ -258,7 +293,7 @@ metadata:
 spec:
   component: github.com/ocm-demo/k8s-app
   version: v1.0.0
-  repository: localhost:5004
+  repository: http://localhost:5004
 EOF
 
 echo "✅ ComponentVersion resource created"
@@ -266,9 +301,9 @@ echo "✅ ComponentVersion resource created"
 # Step 6: Deploy to Kubernetes
 echo -e "${YELLOW}☸️  Step 6: Deploying to Kubernetes${NC}"
 
-# Apply the OCM resources
-kubectl apply -f component-version.yaml
-kubectl apply -f ocm-configuration.yaml
+# Apply the OCM resources (disable validation for custom resources)
+kubectl apply -f component-version.yaml --validate=false
+kubectl apply -f ocm-configuration.yaml --validate=false
 
 # Since we're simulating OCM K8s Toolkit, manually extract and apply manifests
 echo "Extracting and applying manifests..."
@@ -276,13 +311,17 @@ echo "Extracting and applying manifests..."
 # Extract manifests from component
 cd ../components
 mkdir -p extracted
-ocm download resources localhost:5004//github.com/ocm-demo/k8s-app:v1.0.0 \
+
+# Ensure OCM uses HTTP for localhost
+export OCM_CONFIG_PLAIN_HTTP=localhost:5004
+
+ocm download resources http://localhost:5004//github.com/ocm-demo/k8s-app:v1.0.0 \
   configmap -O extracted/
-ocm download resources localhost:5004//github.com/ocm-demo/k8s-app:v1.0.0 \
+ocm download resources http://localhost:5004//github.com/ocm-demo/k8s-app:v1.0.0 \
   deployment -O extracted/
-ocm download resources localhost:5004//github.com/ocm-demo/k8s-app:v1.0.0 \
+ocm download resources http://localhost:5004//github.com/ocm-demo/k8s-app:v1.0.0 \
   service -O extracted/
-ocm download resources localhost:5004//github.com/ocm-demo/k8s-app:v1.0.0 \
+ocm download resources http://localhost:5004//github.com/ocm-demo/k8s-app:v1.0.0 \
   ingress -O extracted/
 
 # Apply manifests to cluster

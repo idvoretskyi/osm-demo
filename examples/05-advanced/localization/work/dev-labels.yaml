@@ -1,9 +1,0 @@
-labels:
-  - name: environment
-    value: development
-  - name: deployment.type
-    value: single-replica
-  - name: security.level
-    value: low
-  - name: monitoring.enabled
-    value: "true"

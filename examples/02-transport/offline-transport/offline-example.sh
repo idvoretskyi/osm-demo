@@ -32,9 +32,36 @@ cd source-env
 # Start source registry
 if ! curl -s http://localhost:5002/v2/ > /dev/null 2>&1; then
     echo "Starting source environment registry on port 5002..."
-    docker run -d -p 5002:5002 --name source-env-registry \
-        -e REGISTRY_HTTP_ADDR=0.0.0.0:5002 registry:2 || true
-    sleep 2
+    
+    # Generate unique container name
+    TIMESTAMP=$(date +%s)
+    SOURCE_ENV_REGISTRY_NAME="source-env-registry-${TIMESTAMP}"
+    
+    # Clean up any existing containers on port 5002
+    docker ps --filter "publish=5002" --format "{{.Names}}" | xargs -r docker stop 2>/dev/null || true
+    docker ps -a --filter "publish=5002" --format "{{.Names}}" | xargs -r docker rm 2>/dev/null || true
+    docker rm -f source-env-registry 2>/dev/null || true
+    
+    if docker run -d -p 5002:5002 --name "$SOURCE_ENV_REGISTRY_NAME" \
+        -e REGISTRY_HTTP_ADDR=0.0.0.0:5002 registry:2; then
+        echo "Started source registry: $SOURCE_ENV_REGISTRY_NAME"
+        
+        # Wait for registry to be ready
+        for i in {1..30}; do
+            if curl -f -s -m 5 http://localhost:5002/v2/ >/dev/null 2>&1; then
+                echo "✅ Source registry ready"
+                break
+            fi
+            if [[ $i -eq 30 ]]; then
+                echo "❌ Source registry failed to start"
+                exit 1
+            fi
+            sleep 1
+        done
+    else
+        echo "❌ Failed to start source registry"
+        exit 1
+    fi
 fi
 
 # Create a component to transport
@@ -174,11 +201,35 @@ cd ../target-env
 # Start target registry (simulating air-gapped registry)
 if ! curl -s http://localhost:5003/v2/ > /dev/null 2>&1; then
     echo "Starting target environment registry on port 5003..."
-    docker run -d -p 5003:5000 --name target-env-registry registry:2 || true
-    sleep 2
+    
+    # Generate unique container name
+    TARGET_ENV_REGISTRY_NAME="target-env-registry-${TIMESTAMP:-$(date +%s)}"
+    
+    # Clean up any existing containers on port 5003
+    docker ps --filter "publish=5003" --format "{{.Names}}" | xargs -r docker stop 2>/dev/null || true
+    docker ps -a --filter "publish=5003" --format "{{.Names}}" | xargs -r docker rm 2>/dev/null || true
+    docker rm -f target-env-registry 2>/dev/null || true
+    
+    if docker run -d -p 5003:5000 --name "$TARGET_ENV_REGISTRY_NAME" registry:2; then
+        echo "Started target registry: $TARGET_ENV_REGISTRY_NAME"
+        
+        # Wait for registry to be ready
+        for i in {1..30}; do
+            if curl -f -s -m 5 http://localhost:5003/v2/ >/dev/null 2>&1; then
+                echo "✅ Target registry ready"
+                break
+            fi
+            if [[ $i -eq 30 ]]; then
+                echo "❌ Target registry failed to start"
+                exit 1
+            fi
+            sleep 1
+        done
+    else
+        echo "❌ Failed to start target registry"
+        exit 1
+    fi
 fi
-
-echo "✅ Target environment registry ready"
 
 # Step 5: Import from Common Transport Format
 echo -e "${YELLOW}📥 Step 5: Importing from transport bundle${NC}"
