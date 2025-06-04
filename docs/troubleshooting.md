@@ -189,6 +189,103 @@ Step 2: Checking kubectl configuration
    kubectl config use-context kind-ocm-demo
    ```
 
+### Kubernetes API Server Connection Refused
+
+**Problem**: 
+```
+couldn't get current server API group list: Get "https://127.0.0.1:37667/api?timeout=32s": dial tcp 127.0.0.1:37667: connect: connection refused
+```
+
+**Root Cause**: The Kubernetes API server is not accessible at the configured address, often due to:
+- Cluster not running or crashed
+- Stale kubeconfig with outdated server address
+- Network connectivity issues
+- Kind cluster restart with new port assignment
+
+**Solution**:
+
+1. **Verify cluster is actually running:**
+   ```bash
+   kind get clusters
+   docker ps | grep kindest
+   ```
+
+2. **Check cluster status and refresh kubeconfig:**
+   ```bash
+   # Export fresh kubeconfig from kind
+   kind export kubeconfig --name=ocm-demo
+   
+   # Verify the API server address is correct
+   kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.server}'
+   ```
+
+3. **Test API server connectivity directly:**
+   ```bash
+   # Get the API server URL
+   API_SERVER=$(kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.server}')
+   
+   # Test connectivity (should get certificate error, not connection refused)
+   curl -k $API_SERVER/api/v1 --max-time 10
+   ```
+
+4. **Restart the cluster if needed:**
+   ```bash
+   # Clean restart of the cluster
+   kind delete cluster --name ocm-demo
+   cd examples/04-k8s-deployment
+   ./setup-cluster.sh
+   ```
+
+5. **For CI/CD environments, ensure proper timing:**
+   ```bash
+   # Wait for cluster to be fully ready
+   kubectl wait --for=condition=Ready nodes --all --timeout=300s
+   kubectl wait --for=condition=Available --timeout=300s deployment/coredns -n kube-system
+   ```
+
+**Advanced Debugging**:
+```bash
+# Check if kind cluster containers are healthy
+docker logs $(docker ps --filter "name=ocm-demo-control-plane" --format "{{.ID}}")
+
+# Verify kind network connectivity
+docker network ls | grep kind
+docker network inspect kind
+
+# Check for port conflicts and connectivity
+lsof -i :6443  # Default k8s API port
+netstat -tulpn | grep 37667  # Or the specific port from error
+
+# Test port connectivity directly
+API_SERVER=$(kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.server}')
+if [[ "$API_SERVER" =~ 127\.0\.0\.1:([0-9]+) ]]; then
+    PORT="${BASH_REMATCH[1]}"
+    nc -z 127.0.0.1 $PORT && echo "Port $PORT is open" || echo "Port $PORT is closed"
+fi
+```
+
+**CI/CD Environment Specific Issues**:
+
+In CI environments, the "connection refused" error often occurs due to:
+- Race conditions between cluster setup and test execution
+- Kind cluster port assignment changes between restarts
+- Insufficient time for API server to become fully ready
+
+To mitigate these issues in CI:
+```bash
+# Allow more time for cluster stabilization
+sleep 10
+
+# Use explicit kubeconfig refresh
+kind export kubeconfig --name=ocm-demo
+
+# Wait for API server to be responsive
+kubectl cluster-info --request-timeout=30s
+
+# Verify cluster readiness before proceeding
+kubectl wait --for=condition=Ready nodes --all --timeout=300s
+```
+
 ### Prerequisites Missing
 
 **Problem**: 

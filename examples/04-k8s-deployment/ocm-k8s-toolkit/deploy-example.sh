@@ -51,7 +51,29 @@ cd "$WORK_DIR"
 ensure_k8s_connectivity() {
     echo "=== Kubernetes Context Validation and Recovery ==="
     
-    # Set KUBECONFIG with multiple fallback options
+    # Step 1: Verify kind cluster is actually running
+    echo "Checking if kind cluster is running..."
+    if ! kind get clusters 2>/dev/null | grep -q "ocm-demo"; then
+        echo "❌ Kind cluster 'ocm-demo' not found"
+        echo "Available clusters:"
+        kind get clusters 2>/dev/null || echo "No kind clusters found"
+        return 1
+    fi
+    
+    # Check if cluster containers are running
+    if ! docker ps --filter "name=ocm-demo-control-plane" --format "{{.Names}}" | grep -q "ocm-demo"; then
+        echo "❌ Kind cluster containers are not running"
+        echo "Cluster exists but containers are stopped. Trying to restart..."
+        if ! kind delete cluster --name ocm-demo; then
+            echo "Failed to delete stale cluster"
+            return 1
+        fi
+        return 1  # Signal that cluster needs to be recreated
+    fi
+    
+    echo "✅ Kind cluster containers are running"
+    
+    # Step 2: Set KUBECONFIG with multiple fallback options
     if [[ -n "${KUBECONFIG:-}" ]]; then
         echo "Using provided KUBECONFIG: $KUBECONFIG"
     elif kind get kubeconfig-path --name=ocm-demo >/dev/null 2>&1; then
@@ -70,16 +92,96 @@ ensure_k8s_connectivity() {
     
     echo "✅ KUBECONFIG file exists and is readable"
     
-    # Update kubeconfig from kind to ensure it's current
-    echo "Updating kubeconfig from kind cluster..."
-    if ! kind export kubeconfig --name=ocm-demo; then
-        echo "❌ Failed to export kubeconfig from kind cluster"
+    # Step 3: Force refresh kubeconfig from kind to ensure current API server address
+    echo "Refreshing kubeconfig from kind cluster..."
+    local kubeconfig_attempts=0
+    local max_kubeconfig_attempts=3
+    
+    while [[ $kubeconfig_attempts -lt $max_kubeconfig_attempts ]]; do
+        if kind export kubeconfig --name=ocm-demo; then
+            echo "✅ Kubeconfig refreshed successfully"
+            break
+        fi
+        
+        kubeconfig_attempts=$((kubeconfig_attempts + 1))
+        echo "Kubeconfig refresh attempt $kubeconfig_attempts/$max_kubeconfig_attempts failed, retrying..."
+        sleep 2
+    done
+    
+    if [[ $kubeconfig_attempts -eq $max_kubeconfig_attempts ]]; then
+        echo "❌ Failed to refresh kubeconfig after $max_kubeconfig_attempts attempts"
         return 1
     fi
     
-    echo "✅ Kubeconfig updated from kind cluster"
+    # Step 4: Validate API server address and connectivity
+    echo "Validating API server connectivity..."
+    local api_server
+    api_server=$(kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null) || {
+        echo "❌ Failed to get API server address from kubeconfig"
+        return 1
+    }
     
-    # Set context with multiple attempts
+    echo "API Server: $api_server"
+    
+    # Additional pre-check: Test if API server port is even open
+    if [[ "$api_server" =~ 127\.0\.0\.1:([0-9]+) ]]; then
+        local port="${BASH_REMATCH[1]}"
+        echo "Pre-checking port $port availability..."
+        if ! nc -z 127.0.0.1 "$port" 2>/dev/null; then
+            echo "❌ Port $port is not open, API server may not be running"
+            echo "Checking kind cluster container status..."
+            docker ps --filter "name=ocm-demo-control-plane" --format "{{.Names}}: {{.Status}}" || true
+            # Try to refresh kubeconfig in case the port changed
+            kind export kubeconfig --name=ocm-demo 2>/dev/null || true
+            api_server=$(kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null) || true
+            echo "Updated API Server: $api_server"
+        else
+            echo "✅ Port $port is open"
+        fi
+    fi
+    
+    # Test raw connectivity to API server
+    local api_test_attempts=0
+    local max_api_test_attempts=3
+    
+    while [[ $api_test_attempts -lt $max_api_test_attempts ]]; do
+        if curl -k -s --max-time 5 "$api_server/api/v1" >/dev/null 2>&1; then
+            echo "✅ API server is reachable"
+            break
+        fi
+        
+        api_test_attempts=$((api_test_attempts + 1))
+        echo "API server connectivity test $api_test_attempts/$max_api_test_attempts failed, retrying..."
+        
+        # Try to refresh kubeconfig again
+        kind export kubeconfig --name=ocm-demo 2>/dev/null || true
+        api_server=$(kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null) || true
+        sleep 3
+    done
+    
+    if [[ $api_test_attempts -eq $max_api_test_attempts ]]; then
+        echo "❌ API server is not reachable after $max_api_test_attempts attempts"
+        echo "Final API server address: $api_server"
+        echo "Testing with curl..."
+        curl -v -k --max-time 10 "$api_server/api/v1" 2>&1 | head -10 || true
+        
+        # Additional debugging for CI environments
+        echo "=== API Server Connectivity Debug ==="
+        echo "Kind cluster containers:"
+        docker ps --filter "name=ocm-demo" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || true
+        echo "Kind cluster logs (last 10 lines):"
+        docker logs "$(docker ps --filter "name=ocm-demo-control-plane" --format "{{.ID}}")" 2>/dev/null | tail -10 || true
+        echo "Network connectivity test:"
+        if [[ "$api_server" =~ 127\.0\.0\.1:([0-9]+) ]]; then
+            local port="${BASH_REMATCH[1]}"
+            echo "Testing port $port connectivity..."
+            nc -z 127.0.0.1 "$port" && echo "Port $port is open" || echo "Port $port is closed/unreachable"
+        fi
+        echo "======================================"
+        return 1
+    fi
+    
+    # Step 5: Set context with multiple attempts
     local context_attempts=0
     local max_context_attempts=5
     
@@ -104,47 +206,65 @@ ensure_k8s_connectivity() {
         return 1
     fi
     
-    # Verify cluster connectivity with retries
-    echo "Verifying cluster connectivity..."
+    # Step 6: Verify cluster connectivity with kubectl
+    echo "Verifying cluster connectivity with kubectl..."
     local connectivity_attempts=0
     local max_connectivity_attempts=5
     
     while [[ $connectivity_attempts -lt $max_connectivity_attempts ]]; do
         if kubectl cluster-info --request-timeout=10s >/dev/null 2>&1; then
-            echo "✅ Cluster connectivity verified"
+            echo "✅ Cluster connectivity verified with kubectl"
             break
         fi
         
         connectivity_attempts=$((connectivity_attempts + 1))
-        echo "Connectivity attempt $connectivity_attempts/$max_connectivity_attempts failed, retrying..."
+        echo "Kubectl connectivity attempt $connectivity_attempts/$max_connectivity_attempts failed, retrying..."
+        
+        # Show detailed error for debugging
+        if [[ $connectivity_attempts -eq 1 ]]; then
+            echo "Debug: kubectl cluster-info error:"
+            kubectl cluster-info 2>&1 | head -5 || true
+        fi
         
         # Try to refresh connection
         kind export kubeconfig --name=ocm-demo 2>/dev/null || true
         kubectl config use-context kind-ocm-demo 2>/dev/null || true
-        sleep 2
+        sleep 3
     done
     
     if [[ $connectivity_attempts -eq $max_connectivity_attempts ]]; then
-        echo "❌ Failed to establish cluster connectivity after $max_connectivity_attempts attempts"
-        echo "=== Debug Information ==="
+        echo "❌ Failed to establish kubectl connectivity after $max_connectivity_attempts attempts"
+        echo "=== Comprehensive Debug Information ==="
         echo "KUBECONFIG: $KUBECONFIG"
         echo "Current context: $(kubectl config current-context 2>/dev/null || echo 'none')"
         echo "Available contexts:"
         kubectl config get-contexts 2>/dev/null || echo "No contexts available"
         echo "Kind clusters:"
         kind get clusters 2>/dev/null || echo "No kind clusters"
-        echo "Kubectl cluster-info (raw output):"
+        echo "Kind cluster containers:"
+        docker ps --filter "name=ocm-demo" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || echo "No containers found"
+        echo "API server from config:"
+        local debug_api_server
+        debug_api_server=$(kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null) || echo "Failed to get API server"
+        echo "$debug_api_server"
+        if [[ "$debug_api_server" =~ 127\.0\.0\.1:([0-9]+) ]]; then
+            local debug_port="${BASH_REMATCH[1]}"
+            echo "Port connectivity test for $debug_port:"
+            nc -z 127.0.0.1 "$debug_port" && echo "  Port $debug_port is open" || echo "  Port $debug_port is closed/unreachable"
+        fi
+        echo "Raw kubectl error:"
         kubectl cluster-info 2>&1 || echo "kubectl cluster-info failed"
-        echo "======================="
+        echo "=================================="
         return 1
     fi
     
-    # Final verification tests
-    echo "Performing final verification tests..."
+    # Step 7: Final verification tests
+    echo "Performing comprehensive verification tests..."
     
     # Test 1: Get nodes
     if ! kubectl get nodes --request-timeout=10s >/dev/null 2>&1; then
         echo "❌ Failed to get nodes"
+        kubectl get nodes 2>&1 | head -3 || true
         return 1
     fi
     echo "✅ Successfully retrieved nodes"
@@ -154,14 +274,23 @@ ensure_k8s_connectivity() {
         echo "❌ API server accessibility test failed"
         return 1
     fi
-    echo "✅ API server is accessible"
+    echo "✅ API server is accessible via kubectl"
+    
+    # Test 3: Wait for system pods to be ready
+    echo "Checking system pod readiness..."
+    if ! kubectl wait --for=condition=Ready pods --all -n kube-system --timeout=30s >/dev/null 2>&1; then
+        echo "⚠️  Some system pods are not ready yet, but cluster is accessible"
+    else
+        echo "✅ System pods are ready"
+    fi
     
     # Show final status
     echo "=== Final Kubernetes Status ==="
     echo "Context: $(kubectl config current-context)"
     echo "KUBECONFIG: $KUBECONFIG"
+    echo "API Server: $(kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.server}')"
     echo "Nodes:"
-    kubectl get nodes 2>/dev/null || echo "Failed to get nodes"
+    kubectl get nodes --no-headers 2>/dev/null | head -3 || echo "Failed to get nodes"
     echo "=============================="
     
     return 0
