@@ -203,19 +203,19 @@ run_all_examples() {
     
     # Run basic examples
     echo -e "${YELLOW}📝 Running basic examples...${NC}"
-    cd "$SCRIPT_DIR/examples/01-basic"
+    cd "$(dirname "$SCRIPT_DIR")/examples/01-basic"
     ./run-examples.sh
     echo ""
     
     # Run transport examples
     echo -e "${YELLOW}🚀 Running transport examples...${NC}"
-    cd "$SCRIPT_DIR/examples/02-transport/local-to-oci"
+    cd "$(dirname "$SCRIPT_DIR")/examples/02-transport/local-to-oci"
     ./transport-example.sh
     echo ""
     
     # Run signing examples
     echo -e "${YELLOW}🔐 Running signing examples...${NC}"
-    cd "$SCRIPT_DIR/examples/03-signing/basic-signing"
+    cd "$(dirname "$SCRIPT_DIR")/examples/03-signing/basic-signing"
     ./sign-component.sh
     echo ""
     

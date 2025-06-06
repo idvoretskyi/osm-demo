@@ -241,7 +241,7 @@ openssl pkey -in ../keys/wrong-key.pem -pubout -out ../keys/wrong-public-key.pem
 
 echo "Attempting verification with wrong key (should fail):"
 ocm verify signature signed-component production-signature \
-  --public-key production-signature=../keys/wrong-public-key.pem 2>&1 | head -5 || \
+  --public-key ../keys/wrong-public-key.pem 2>&1 | head -5 || \
   echo "❌ Verification failed as expected with wrong key"
 
 echo -e "${GREEN}✨ Component signing demo completed successfully!${NC}"
