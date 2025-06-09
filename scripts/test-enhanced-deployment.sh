@@ -151,7 +151,9 @@ else
 fi
 
 # Check that connectivity is validated before wait operations
-if grep -B 10 "kubectl wait --for=condition=available deployment/ocm-demo-app" "$DEPLOY_SCRIPT" | grep -q "Re-validating connectivity before deployment wait"; then
+revalidation_line=$(grep -n "Re-validating connectivity before deployment wait" "$DEPLOY_SCRIPT" | cut -d: -f1)
+wait_line=$(grep -n "kubectl.*wait.*deployment.*ocm-demo-app" "$DEPLOY_SCRIPT" | cut -d: -f1)
+if [ -n "$revalidation_line" ] && [ -n "$wait_line" ] && [ "$revalidation_line" -lt "$wait_line" ]; then
     echo -e "${GREEN}✅ Connectivity validated before deployment wait${NC}"
 else
     echo -e "${RED}❌ No connectivity validation before deployment wait${NC}"
