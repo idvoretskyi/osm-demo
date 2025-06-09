@@ -136,13 +136,16 @@ run_test() {
     log_test "Running test: $test_name"
     
     local start_time
-    local test_log_file="/tmp/ocm-test-${test_name//[^a-zA-Z0-9]/-}.log"
+    # Create safe filename by replacing non-alphanumeric characters with dashes
+    local safe_name
+    safe_name=$(echo "$test_name" | sed 's/[^a-zA-Z0-9]/-/g')
+    local test_log_file="/tmp/ocm-test-${safe_name}.log"
     local attempt=1
     
     start_time=$(date +%s)
     
-    while [[ $attempt -le $retry_count ]]; do
-        if [[ $retry_count -gt 1 ]]; then
+    while [ $attempt -le $retry_count ]; do
+        if [ $retry_count -gt 1 ]; then
             log_info "Attempt $attempt of $retry_count for: $test_name"
         fi
         
@@ -166,7 +169,7 @@ run_test() {
                 echo "Exit code: $test_result" >> "$test_log_file"
                 
                 # Check if it was a timeout
-                if [[ $test_result -eq 124 ]]; then
+                if [ $test_result -eq 124 ]; then
                     log_warning "Test timed out after ${timeout}s: $test_name"
                     echo "TIMEOUT after ${timeout}s" >> "$test_log_file"
                 fi
@@ -177,7 +180,7 @@ run_test() {
         fi
         
         # If this was the last attempt or test succeeded, break
-        if [[ $attempt -eq $retry_count ]] || [[ $test_result -eq 0 ]]; then
+        if [ $attempt -eq $retry_count ] || [ $test_result -eq 0 ]; then
             break
         fi
         
@@ -195,7 +198,7 @@ run_test() {
     cat "$test_log_file" >> "$TEST_LOG"
     echo "" >> "$TEST_LOG"
     
-    if [[ $test_result -eq 0 ]]; then
+    if [ $test_result -eq 0 ]; then
         TESTS_PASSED=$((TESTS_PASSED + 1))
         log_success "PASSED: $test_name (${duration}s)"
         rm -f "$test_log_file"  # Clean up successful test logs
