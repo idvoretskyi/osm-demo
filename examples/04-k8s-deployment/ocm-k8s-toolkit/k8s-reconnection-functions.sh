@@ -36,13 +36,15 @@ handle_connection_refused() {
     local max_wait=60
     echo "⏳ Waiting for API server to become responsive..."
     
-    for ((i=1; i<=max_wait; i+=5)); do
-        if kubectl version --short &>/dev/null; then
+    local i=1
+    while [ $i -le $max_wait ]; do
+        if kubectl version --short > /dev/null 2>&1; then
             echo -e "${GREEN}✅ API server is responsive${NC}"
             return 0
         fi
         echo "   Waiting... ($i/${max_wait}s)"
         sleep 5
+        i=$((i + 5))
     done
     
     echo -e "${RED}❌ API server not responsive after ${max_wait}s${NC}"
@@ -54,7 +56,8 @@ smart_kubectl_with_retry() {
     local description="$1"
     local max_attempts="${2:-5}"
     shift 2
-    local kubectl_cmd=("$@")
+    # Store the command as a string for POSIX compatibility
+    local kubectl_cmd="$*"
     
     echo -e "${BLUE}🔄 Executing: $description${NC}"
     
@@ -62,7 +65,7 @@ smart_kubectl_with_retry() {
         echo "  Attempt $attempt/$max_attempts..."
         
         # Execute the kubectl command
-        if "${kubectl_cmd[@]}" 2>/dev/null; then
+        if eval "$kubectl_cmd" > /dev/null 2>&1; then
             echo -e "${GREEN}✅ $description succeeded${NC}"
             return 0
         fi
@@ -70,7 +73,7 @@ smart_kubectl_with_retry() {
         local exit_code=$?
         
         # Check if it's a connection refused error
-        if "${kubectl_cmd[@]}" 2>&1 | grep -q "connection refused\|connection reset\|context deadline exceeded\|unable to connect"; then
+        if eval "$kubectl_cmd" 2>&1 | grep -q "connection refused\|connection reset\|context deadline exceeded\|unable to connect"; then
             echo -e "${YELLOW}⚠️  Connection issue detected${NC}"
             
             if handle_connection_refused "$description" "$attempt"; then
@@ -99,7 +102,7 @@ ensure_cluster_connectivity() {
     echo -e "${BLUE}🔗 Ensuring cluster connectivity...${NC}"
     
     # First, basic connectivity check
-    if kubectl version --short &>/dev/null; then
+    if kubectl version --short > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Basic connectivity confirmed${NC}"
         return 0
     fi
@@ -160,7 +163,7 @@ safe_apply_manifests() {
     fi
     
     # Apply each manifest file with retry
-    local failed_files=()
+    local failed_files=""
     find "$manifest_dir" -name "*.yaml" -o -name "*.yml" | sort | while read -r manifest_file; do
         local filename=$(basename "$manifest_file")
         
@@ -168,18 +171,24 @@ safe_apply_manifests() {
             echo -e "${GREEN}✅ Applied: $filename${NC}"
         else
             echo -e "${RED}❌ Failed to apply: $filename${NC}"
-            failed_files+=("$filename")
+            if [ -z "$failed_files" ]; then
+                failed_files="$filename"
+            else
+                failed_files="$failed_files $filename"
+            fi
         fi
         
         # Small delay between applications to avoid overwhelming the API server
         sleep 2
     done
     
-    if [ ${#failed_files[@]} -eq 0 ]; then
+    if [ -z "$failed_files" ]; then
         echo -e "${GREEN}✅ All manifests applied successfully${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed to apply ${#failed_files[@]} manifests: ${failed_files[*]}${NC}"
+        local failed_count
+        failed_count=$(echo "$failed_files" | wc -w | tr -d ' ')
+        echo -e "${RED}❌ Failed to apply $failed_count manifests: $failed_files${NC}"
         return 1
     fi
 }
@@ -277,7 +286,7 @@ apply_ci_stability_measures() {
         
         # Check API server responsiveness multiple times
         for i in {1..3}; do
-            if ! kubectl version --short &>/dev/null; then
+            if ! kubectl version --short > /dev/null 2>&1; then
                 echo "⚠️  API server check $i/3 failed, waiting..."
                 sleep 10
             else

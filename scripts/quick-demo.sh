@@ -72,7 +72,7 @@ check_prerequisites() {
     local missing_tools=()
     
     for tool in ocm docker; do
-        if ! command -v "$tool" &> /dev/null; then
+        if ! command -v "$tool" > /dev/null 2>&1; then
             missing_tools+=("$tool")
         fi
     done

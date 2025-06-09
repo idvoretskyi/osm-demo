@@ -60,7 +60,7 @@ check_cluster_ready() {
     echo "🔍 Checking kubectl configuration..."
     
     # Check kubectl config
-    if ! kubectl config current-context &> /dev/null; then
+    if ! kubectl config current-context > /dev/null 2>&1; then
         echo -e "${RED}❌ No kubectl context available${NC}"
         echo "Available contexts:"
         kubectl config get-contexts || echo "No contexts found"
@@ -73,7 +73,7 @@ check_cluster_ready() {
     
     # Check cluster info
     echo "🔍 Checking cluster connectivity..."
-    if ! kubectl cluster-info &> /dev/null; then
+    if ! kubectl cluster-info > /dev/null 2>&1; then
         echo -e "${RED}❌ Kubernetes cluster not accessible${NC}"
         echo "Cluster info output:"
         kubectl cluster-info 2>&1 || echo "Failed to get cluster info"
@@ -186,15 +186,24 @@ show_deployment_debug() {
     fi
     echo "API Server: $api_server"
     
-    if [[ "$api_server" =~ 127\.0\.0\.1:([0-9]+) ]]; then
-        local port="${BASH_REMATCH[1]}"
-        echo "Port connectivity test:"
-        if nc -z 127.0.0.1 "$port" 2>/dev/null; then
-            echo "  ✅ Port $port is accessible"
-        else
-            echo "  ❌ Port $port is not accessible"
-        fi
-    fi
+    # Extract port using POSIX-compliant method
+    case "$api_server" in
+        *127.0.0.1:*)
+            local port
+            port=$(echo "$api_server" | sed 's/.*127\.0\.0\.1:\([0-9]*\).*/\1/')
+            if [ -n "$port" ] && [ "$port" != "$api_server" ]; then
+                echo "Port connectivity test:"
+                if nc -z 127.0.0.1 "$port" 2>/dev/null; then
+                    echo "  ✅ Port $port is accessible"
+                else
+                    echo "  ❌ Port $port is not accessible"
+                fi
+            fi
+            ;;
+        *)
+            echo "  ℹ️  Non-localhost API server, skipping port test"
+            ;;
+    esac
     echo ""
     
     echo "📊 Cluster Resource Status:"
@@ -310,16 +319,19 @@ ensure_k8s_connectivity() {
     echo "$api_server" > /tmp/last_known_api_server 2>/dev/null || true
     
     # Additional pre-check: Test if API server port is even open
-    if [[ "$api_server" =~ 127\.0\.0\.1:([0-9]+) ]]; then
-        local port="${BASH_REMATCH[1]}"
-        echo "Pre-checking port $port availability..."
-        if ! nc -z 127.0.0.1 "$port" 2>/dev/null; then
-            echo "❌ Port $port is not open, API server may not be running"
-            echo "Checking kind cluster container status..."
-            docker ps --filter "name=ocm-demo-control-plane" --format "{{.Names}}: {{.Status}}" || true
-            
-            # Check if port changed - common in CI environments
-            echo "Checking if API server port changed..."
+    case "$api_server" in
+        *127.0.0.1:*)
+            local port
+            port=$(echo "$api_server" | sed 's/.*127\.0\.0\.1:\([0-9]*\).*/\1/')
+            if [ -n "$port" ] && [ "$port" != "$api_server" ]; then
+                echo "Pre-checking port $port availability..."
+                if ! nc -z 127.0.0.1 "$port" 2>/dev/null; then
+                    echo "❌ Port $port is not open, API server may not be running"
+                    echo "Checking kind cluster container status..."
+                    docker ps --filter "name=ocm-demo-control-plane" --format "{{.Names}}: {{.Status}}" || true
+                    
+                    # Check if port changed - common in CI environments
+                    echo "Checking if API server port changed..."
             if [[ -f /tmp/last_known_api_server ]]; then
                 local previous_api_server
                 previous_api_server=$(cat /tmp/last_known_api_server 2>/dev/null || echo "")
@@ -334,19 +346,29 @@ ensure_k8s_connectivity() {
             api_server=$(kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null) || true
             echo "Updated API Server: $api_server"
             
-            # Test the new port
-            if [[ "$api_server" =~ 127\.0\.0\.1:([0-9]+) ]]; then
-                local new_port="${BASH_REMATCH[1]}"
-                if nc -z 127.0.0.1 "$new_port" 2>/dev/null; then
-                    echo "✅ New port $new_port is open"
-                else
-                    echo "❌ New port $new_port is also not accessible"
-                fi
+                # Test the new port
+                case "$api_server" in
+                    *127.0.0.1:*)
+                        local new_port
+                        new_port=$(echo "$api_server" | sed 's/.*127\.0\.0\.1:\([0-9]*\).*/\1/')
+                        if [ -n "$new_port" ] && [ "$new_port" != "$api_server" ]; then
+                            if nc -z 127.0.0.1 "$new_port" 2>/dev/null; then
+                                echo "✅ New port $new_port is open"
+                            else
+                                echo "❌ New port $new_port is also not accessible"
+                            fi
+                        fi
+                        ;;
+                esac
             fi
         else
             echo "✅ Port $port is open"
         fi
-    fi
+            ;;
+        *)
+            echo "  ℹ️  Non-localhost API server, skipping port check"
+            ;;
+    esac
     
     # Test raw connectivity to API server
     local api_test_attempts=0
@@ -382,11 +404,16 @@ ensure_k8s_connectivity() {
         echo "Kind cluster logs (last 10 lines):"
         docker logs "$(docker ps --filter "name=ocm-demo-control-plane" --format "{{.ID}}")" 2>/dev/null | tail -10 || true
         echo "Network connectivity test:"
-        if [[ "$api_server" =~ 127\.0\.0\.1:([0-9]+) ]]; then
-            local port="${BASH_REMATCH[1]}"
-            echo "Testing port $port connectivity..."
-            nc -z 127.0.0.1 "$port" && echo "Port $port is open" || echo "Port $port is closed/unreachable"
-        fi
+        case "$api_server" in
+            *127.0.0.1:*)
+                local port
+                port=$(echo "$api_server" | sed 's/.*127\.0\.0\.1:\([0-9]*\).*/\1/')
+                if [ -n "$port" ] && [ "$port" != "$api_server" ]; then
+                    echo "Testing port $port connectivity..."
+                    nc -z 127.0.0.1 "$port" && echo "Port $port is open" || echo "Port $port is closed/unreachable"
+                fi
+                ;;
+        esac
         echo "======================================"
         return 1
     fi
@@ -457,8 +484,8 @@ ensure_k8s_connectivity() {
         local debug_api_server
         debug_api_server=$(kubectl config view --minify --raw -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null) || echo "Failed to get API server"
         echo "$debug_api_server"
-        if [[ "$debug_api_server" =~ 127\.0\.0\.1:([0-9]+) ]]; then
-            local debug_port="${BASH_REMATCH[1]}"
+        if echo "$debug_api_server" | grep -q "127\.0\.0\.1:[0-9]*"; then
+            local debug_port=$(echo "$debug_api_server" | sed 's/.*127\.0\.0\.1:\([0-9]*\).*/\1/')
             echo "Port connectivity test for $debug_port:"
             nc -z 127.0.0.1 "$debug_port" && echo "  Port $debug_port is open" || echo "  Port $debug_port is closed/unreachable"
         fi
@@ -552,7 +579,7 @@ if ! check_cluster_ready; then
     echo -e "${YELLOW}🚀 Attempting to set up a cluster automatically...${NC}"
     
     # Check if kind is available
-    if ! command -v kind &> /dev/null; then
+    if ! command -v kind > /dev/null 2>&1; then
         echo -e "${RED}❌ kind is not installed. Please install it first:${NC}"
         echo "   macOS: brew install kind"
         echo "   Linux: see https://kind.sigs.k8s.io/docs/user/quick-start/"
@@ -562,7 +589,7 @@ if ! check_cluster_ready; then
     fi
     
     # Check if Docker is available
-    if ! command -v docker &> /dev/null; then
+    if ! command -v docker > /dev/null 2>&1; then
         echo -e "${RED}❌ Docker is not available. Please install Docker first.${NC}"
         show_troubleshooting_help
         exit 1

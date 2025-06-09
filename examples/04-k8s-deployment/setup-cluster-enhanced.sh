@@ -27,7 +27,7 @@ wait_for_condition() {
     local attempt=1
     while [ $attempt -le $max_attempts ]; do
         echo "  Attempt $attempt/$max_attempts..."
-        if eval "$check_command" &>/dev/null; then
+        if eval "$check_command" > /dev/null 2>&1; then
             echo -e "${GREEN}✅ $description ready${NC}"
             return 0
         fi
@@ -118,28 +118,28 @@ echo -e "${BLUE}☸️  Setting up Enhanced Kubernetes cluster for OCM demos${NC
 # Check prerequisites
 echo -e "${YELLOW}🔍 Checking prerequisites...${NC}"
 
-if ! command -v kind &> /dev/null; then
+if ! command -v kind > /dev/null 2>&1; then
     echo -e "${RED}❌ kind not found. Please install kind first.${NC}"
     exit 1
 fi
 
-if ! command -v kubectl &> /dev/null; then
+if ! command -v kubectl > /dev/null 2>&1; then
     echo -e "${RED}❌ kubectl not found. Please install kubectl first.${NC}"
     exit 1
 fi
 
-if ! command -v flux &> /dev/null; then
+if ! command -v flux > /dev/null 2>&1; then
     echo -e "${RED}❌ flux CLI not found. Please install flux CLI first.${NC}"
     exit 1
 fi
 
-if ! command -v docker &> /dev/null; then
+if ! command -v docker > /dev/null 2>&1; then
     echo -e "${RED}❌ docker not found. Please install docker first.${NC}"
     exit 1
 fi
 
 # Check Docker is running
-if ! docker info &> /dev/null; then
+if ! docker info > /dev/null 2>&1; then
     echo -e "${RED}❌ Docker daemon not running. Please start Docker.${NC}"
     exit 1
 fi
@@ -278,7 +278,7 @@ echo -e "${GREEN}✅ NGINX Ingress Controller installed and ready${NC}"
 echo -e "${YELLOW}🔄 Installing Flux...${NC}"
 
 # Check if Flux is already installed
-if kubectl get namespace flux-system &> /dev/null; then
+if kubectl get namespace flux-system > /dev/null 2>&1; then
     echo "Flux already installed, verifying health..."
     if ! wait_for_condition "existing Flux pods" 20 10 "kubectl wait --for=condition=Ready pods --all -n flux-system --timeout=30s"; then
         echo "Existing Flux installation unhealthy, reinstalling..."
@@ -289,7 +289,7 @@ if kubectl get namespace flux-system &> /dev/null; then
     fi
 fi
 
-if ! kubectl get namespace flux-system &> /dev/null; then
+if ! kubectl get namespace flux-system > /dev/null 2>&1; then
     if ! retry_with_backoff 3 20 "Flux installation" "flux install"; then
         echo -e "${RED}❌ Failed to install Flux${NC}"
         exit 1
@@ -597,7 +597,7 @@ echo "============================================"
 exit_code=0
 
 # Check API server
-if kubectl version --short &>/dev/null; then
+if kubectl version --short > /dev/null 2>&1; then
     echo "✅ API Server: Connected"
     api_version=$(kubectl version --short 2>/dev/null | grep "Server Version" | cut -d: -f2 | tr -d ' ')
     echo "   Version: $api_version"
@@ -635,7 +635,7 @@ fi
 echo ""
 echo "🏢 Critical Namespaces:"
 for ns in ingress-nginx flux-system; do
-    if kubectl get namespace "$ns" &>/dev/null; then
+    if kubectl get namespace "$ns" > /dev/null 2>&1; then
         failing_pods=$(kubectl get pods -n "$ns" --field-selector=status.phase!=Running --no-headers 2>/dev/null | wc -l)
         total_pods=$(kubectl get pods -n "$ns" --no-headers 2>/dev/null | wc -l)
         if [ "$failing_pods" -eq 0 ]; then
@@ -654,7 +654,7 @@ done
 # Check OCM components
 echo ""
 echo "🛠️  OCM Components:"
-if kubectl get namespace ocm-demos &>/dev/null; then
+if kubectl get namespace ocm-demos > /dev/null 2>&1; then
     crd_count=$(kubectl get crd | grep ocm.software | wc -l)
     if [ "$crd_count" -ge 2 ]; then
         echo "✅ OCM CRDs: $crd_count installed"
@@ -664,7 +664,7 @@ if kubectl get namespace ocm-demos &>/dev/null; then
     fi
     
     # Check resource quotas
-    if kubectl get resourcequota -n ocm-demos &>/dev/null; then
+    if kubectl get resourcequota -n ocm-demos > /dev/null 2>&1; then
         echo "✅ Resource Quotas: Configured"
     else
         echo "⚠️  Resource Quotas: Not found"
@@ -677,11 +677,11 @@ fi
 # Check metrics server
 echo ""
 echo "📊 Metrics Server:"
-if kubectl get deployment metrics-server -n kube-system &>/dev/null; then
-    if kubectl wait --for=condition=Available deployment/metrics-server -n kube-system --timeout=10s &>/dev/null; then
+if kubectl get deployment metrics-server -n kube-system > /dev/null 2>&1; then
+    if kubectl wait --for=condition=Available deployment/metrics-server -n kube-system --timeout=10s > /dev/null 2>&1; then
         echo "✅ Metrics Server: Available"
         # Try to get metrics
-        if kubectl top nodes &>/dev/null; then
+        if kubectl top nodes > /dev/null 2>&1; then
             echo "✅ Metrics Collection: Working"
         else
             echo "⚠️  Metrics Collection: Not ready yet"
@@ -698,7 +698,7 @@ fi
 # Check DNS resolution
 echo ""
 echo "🌐 DNS Resolution:"
-if kubectl run test-dns-check --image=busybox --rm -i --restart=Never --timeout=30s -- nslookup kubernetes.default &>/dev/null; then
+if kubectl run test-dns-check --image=busybox --rm -i --restart=Never --timeout=30s -- nslookup kubernetes.default > /dev/null 2>&1; then
     echo "✅ DNS: Working"
 else
     echo "❌ DNS: Resolution failed"
@@ -708,7 +708,7 @@ fi
 # Resource usage summary
 echo ""
 echo "💾 Resource Usage Summary:"
-if kubectl top nodes &>/dev/null; then
+if kubectl top nodes > /dev/null 2>&1; then
     kubectl top nodes 2>/dev/null | head -n 5
 else
     echo "⚠️  Resource metrics not available yet"

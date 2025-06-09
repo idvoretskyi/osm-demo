@@ -203,7 +203,10 @@ if ! curl -s http://localhost:5003/v2/ > /dev/null 2>&1; then
     echo "Starting target environment registry on port 5003..."
     
     # Generate unique container name
-    TARGET_ENV_REGISTRY_NAME="target-env-registry-${TIMESTAMP:-$(date +%s)}"
+    if [ -z "${TIMESTAMP:-}" ]; then
+        TIMESTAMP=$(date +%s)
+    fi
+    TARGET_ENV_REGISTRY_NAME="target-env-registry-${TIMESTAMP}"
     
     # Clean up any existing containers on port 5003
     docker ps --filter "publish=5003" --format "{{.Names}}" | xargs -r docker stop 2>/dev/null || true

@@ -21,7 +21,7 @@ verify_cluster() {
     
     # Step 1: Check kubectl availability
     echo -e "${YELLOW}Step $((step++)): Checking kubectl availability${NC}"
-    if ! command -v kubectl &> /dev/null; then
+    if ! command -v kubectl > /dev/null 2>&1; then
         echo -e "${RED}❌ kubectl not found${NC}"
         return 1
     fi
@@ -29,7 +29,7 @@ verify_cluster() {
     
     # Step 2: Check kubectl configuration
     echo -e "${YELLOW}Step $((step++)): Checking kubectl configuration${NC}"
-    if ! kubectl config current-context &> /dev/null; then
+    if ! kubectl config current-context > /dev/null 2>&1; then
         echo -e "${RED}❌ No kubectl context available${NC}"
         echo "Available contexts:"
         kubectl config get-contexts 2>/dev/null || echo "No contexts found"
@@ -42,7 +42,7 @@ verify_cluster() {
     
     # Step 3: Check cluster connectivity
     echo -e "${YELLOW}Step $((step++)): Checking cluster connectivity${NC}"
-    if ! kubectl cluster-info &> /dev/null; then
+    if ! kubectl cluster-info > /dev/null 2>&1; then
         echo -e "${RED}❌ Cannot connect to cluster${NC}"
         echo "Cluster info output:"
         kubectl cluster-info 2>&1 || echo "Failed to get cluster info"
@@ -119,11 +119,12 @@ show_debug_info() {
     echo "Environment:"
     echo "  KUBECONFIG: ${KUBECONFIG:-$HOME/.kube/config}"
     echo "  Current directory: $(pwd)"
-    echo "  USER: ${USER:-$(whoami)}"
+    USER_VAR="${USER:-$(whoami)}"
+    echo "  USER: ${USER_VAR}"
     
     echo ""
     echo "Prerequisites check:"
-    if command -v kind &> /dev/null; then
+    if command -v kind > /dev/null 2>&1; then
         echo "  ✅ kind is available: $(kind version | head -1)"
         echo ""
         echo "Available kind clusters:"
@@ -133,13 +134,13 @@ show_debug_info() {
         echo "     Install with: brew install kind (macOS) or see https://kind.sigs.k8s.io/docs/user/quick-start/"
     fi
     
-    if command -v docker &> /dev/null; then
+    if command -v docker > /dev/null 2>&1; then
         echo "  ✅ Docker is available: $(docker --version)"
     else
         echo "  ❌ Docker is not available"
     fi
     
-    if command -v kubectl &> /dev/null; then
+    if command -v kubectl > /dev/null 2>&1; then
         echo "  ✅ kubectl is available: $(kubectl version --client --short 2>/dev/null || echo 'version info unavailable')"
     else
         echo "  ❌ kubectl is not available"

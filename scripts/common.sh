@@ -136,12 +136,9 @@ cleanup_all_registries() {
     log_info "Cleaning up all registry containers..."
     
     # Common registry names
-    local registry_names=(
-        "registry" "local-registry" "source-registry" "target-registry"
-        "source-env-registry" "target-env-registry" "demo-registry"
-    )
+    local registry_names="registry local-registry source-registry target-registry source-env-registry target-env-registry demo-registry"
     
-    for name in "${registry_names[@]}"; do
+    for name in $registry_names; do
         docker rm -f "$name" 2>/dev/null || true
     done
     
@@ -251,17 +248,17 @@ get_project_root() {
 validate_project_structure() {
     local project_root="$1"
     
-    local required_dirs=("scripts" "examples" "docs")
-    local required_files=("README.md" "LICENSE")
+    local required_dirs="scripts examples docs"
+    local required_files="README.md LICENSE"
     
-    for dir in "${required_dirs[@]}"; do
+    for dir in $required_dirs; do
         if [[ ! -d "$project_root/$dir" ]]; then
             log_error "Required directory missing: $dir"
             return 1
         fi
     done
     
-    for file in "${required_files[@]}"; do
+    for file in $required_files; do
         if [[ ! -f "$project_root/$file" ]]; then
             log_warning "Expected file missing: $file"
         fi
@@ -274,12 +271,12 @@ validate_project_structure() {
 check_prerequisites() {
     log_info "Checking prerequisites..."
     
-    local missing_tools=()
-    local required_tools=("ocm" "docker")
+    local missing_tools=""
+    local required_tools="ocm docker"
     
-    for tool in "${required_tools[@]}"; do
+    for tool in $required_tools; do
         if ! command_exists "$tool"; then
-            missing_tools+=("$tool")
+            missing_tools="$missing_tools $tool"
         fi
     done
     

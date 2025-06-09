@@ -139,50 +139,51 @@ analyze_scripts() {
     echo
 }
 
+check_doc_file() {
+    local doc_file="$1"
+    local doc_desc="$2"
+    if [[ -f "$PROJECT_ROOT/$doc_file" ]]; then
+        local size
+        size=$(get_file_size "$PROJECT_ROOT/$doc_file")
+        log_item "$doc_file ($size) - $doc_desc"
+    else
+        log_item "$doc_file - Missing"
+    fi
+}
+
 analyze_documentation() {
     log_section "Documentation"
     
-    local docs=(
-        "README.md:Main project documentation"
-        "docs/troubleshooting.md:Common issues and solutions"
-        "docs/contributing.md:Contributor guidelines"
-        "docs/ocm-demo-flow.md:Visual workflow diagrams"
-        "LICENSE:Apache License 2.0"
-    )
-    
-    for doc_info in "${docs[@]}"; do
-        IFS=':' read -r doc_file doc_desc <<< "$doc_info"
-        if [[ -f "$PROJECT_ROOT/$doc_file" ]]; then
-            local size
-            size=$(get_file_size "$PROJECT_ROOT/$doc_file")
-            log_item "$doc_file ($size) - $doc_desc"
-        else
-            log_item "$doc_file - Missing"
-        fi
-    done
+    # Check documentation files one by one
+    check_doc_file "README.md" "Main project documentation"
+    check_doc_file "docs/troubleshooting.md" "Common issues and solutions"
+    check_doc_file "docs/contributing.md" "Contributor guidelines"  
+    check_doc_file "docs/ocm-demo-flow.md" "Visual workflow diagrams"
+    check_doc_file "LICENSE" "Apache License 2.0"
     echo
+}
+
+show_capability() {
+    local capability="$1"
+    local cap_name=$(echo "$capability" | cut -d':' -f1)
+    local cap_desc=$(echo "$capability" | cut -d':' -f2-)
+    log_item "$cap_name - $cap_desc"
 }
 
 show_capabilities() {
     log_section "OCM Capabilities Demonstrated"
     
-    local capabilities=(
-        "Component Creation:Package software artifacts with metadata"
-        "Resource Management:Handle different resource types (OCI, files, configs)"
-        "Component Transport:Move components between storage backends"
-        "Digital Signing:Cryptographic integrity and authenticity"
-        "Signature Verification:Trust validation and security policies"
-        "OCI Registry Integration:Standard container registry compatibility"
-        "Offline Transport:Air-gapped deployment scenarios"
-        "Kubernetes Integration:Native K8s deployment patterns"
-        "GitOps Workflows:FluxCD and continuous delivery"
-        "Multi-Environment:Development to production scenarios"
-    )
-    
-    for capability in "${capabilities[@]}"; do
-        IFS=':' read -r cap_name cap_desc <<< "$capability"
-        log_item "$cap_name - $cap_desc"
-    done
+    # List capabilities one by one
+    show_capability "Component Creation:Package software artifacts with metadata"
+    show_capability "Resource Management:Handle different resource types (OCI, files, configs)"
+    show_capability "Component Transport:Move components between storage backends"
+    show_capability "Digital Signing:Cryptographic integrity and authenticity"
+    show_capability "Signature Verification:Trust validation and security policies"
+    show_capability "OCI Registry Integration:Standard container registry compatibility"
+    show_capability "Offline Transport:Air-gapped deployment scenarios"
+    show_capability "Kubernetes Integration:Native K8s deployment patterns"
+    show_capability "GitOps Workflows:FluxCD and continuous delivery"
+    show_capability "Multi-Environment:Development to production scenarios"
     echo
 }
 
@@ -209,24 +210,25 @@ show_learning_path() {
     echo
 }
 
+show_command() {
+    local cmd_info="$1"
+    local cmd=$(echo "$cmd_info" | cut -d':' -f1)
+    local cmd_desc=$(echo "$cmd_info" | cut -d':' -f2-)
+    echo -e "  ${CYAN}$cmd${NC}"
+    echo -e "    $cmd_desc"
+    echo
+}
+
 show_quick_commands() {
     log_section "Quick Commands"
     
-    local commands=(
-        "./scripts/setup-environment.sh:Set up complete environment"
-        "./scripts/quick-demo.sh:Run 5-minute interactive demo"
-        "./scripts/ocm-utils.sh status:Check environment status"
-        "./scripts/ocm-utils.sh run-all:Execute all examples"
-        "./scripts/test-all.sh:Run comprehensive test suite"
-        "./scripts/ocm-utils.sh cleanup:Clean up all resources"
-    )
-    
-    for cmd_info in "${commands[@]}"; do
-        IFS=':' read -r cmd cmd_desc <<< "$cmd_info"
-        echo -e "  ${CYAN}$cmd${NC}"
-        echo -e "    $cmd_desc"
-        echo
-    done
+    # List commands one by one
+    show_command "./scripts/setup-environment.sh:Set up complete environment"
+    show_command "./scripts/quick-demo.sh:Run 5-minute interactive demo"
+    show_command "./scripts/ocm-utils.sh status:Check environment status"
+    show_command "./scripts/ocm-utils.sh run-all:Execute all examples"
+    show_command "./scripts/test-all.sh:Run comprehensive test suite"
+    show_command "./scripts/ocm-utils.sh cleanup:Clean up all resources"
 }
 
 show_technologies() {
@@ -246,7 +248,7 @@ show_technologies() {
         IFS=':' read -r tool_name tool_desc <<< "$tool_info"
         local tool_cmd
         tool_cmd=$(echo "$tool_name" | tr '[:upper:]' '[:lower:]')
-        if command -v "$tool_cmd" &> /dev/null || command -v "$tool_name" &> /dev/null; then
+        if command -v "$tool_cmd" > /dev/null 2>&1 || command -v "$tool_name" > /dev/null 2>&1; then
             log_item "$tool_name ✅ - $tool_desc"
         else
             log_item "$tool_name ❌ - $tool_desc"

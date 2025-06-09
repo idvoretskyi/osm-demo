@@ -105,14 +105,14 @@ check_status() {
     echo ""
     
     # Check OCM CLI
-    if command -v ocm &> /dev/null; then
+    if command -v ocm > /dev/null 2>&1; then
         echo -e "${GREEN}✅ OCM CLI: $(ocm version --client 2>/dev/null | head -1 || echo 'installed')${NC}"
     else
         echo -e "${RED}❌ OCM CLI: Not installed${NC}"
     fi
     
     # Check Docker
-    if command -v docker &> /dev/null && docker info &> /dev/null; then
+    if command -v docker > /dev/null 2>&1 && docker info > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Docker: Running${NC}"
     else
         echo -e "${RED}❌ Docker: Not running${NC}"
@@ -126,7 +126,7 @@ check_status() {
     fi
     
     # Check kind
-    if command -v kind &> /dev/null; then
+    if command -v kind > /dev/null 2>&1; then
         if kind get clusters | grep -q ocm-demo; then
             echo -e "${GREEN}✅ Kind Cluster: ocm-demo cluster exists${NC}"
         else
@@ -137,8 +137,8 @@ check_status() {
     fi
     
     # Check kubectl
-    if command -v kubectl &> /dev/null; then
-        if kubectl cluster-info &> /dev/null; then
+    if command -v kubectl > /dev/null 2>&1; then
+        if kubectl cluster-info > /dev/null 2>&1; then
             echo -e "${GREEN}✅ Kubectl: Connected to cluster${NC}"
         else
             echo -e "${YELLOW}⚠️  Kubectl: Installed but not connected${NC}"
@@ -148,7 +148,7 @@ check_status() {
     fi
     
     # Check Flux
-    if command -v flux &> /dev/null; then
+    if command -v flux > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Flux CLI: $(flux version --client 2>/dev/null | head -1 || echo 'installed')${NC}"
     else
         echo -e "${RED}❌ Flux CLI: Not installed${NC}"

@@ -17,12 +17,12 @@ echo -e "${BLUE}🚀 Running all Advanced Examples${NC}"
 echo -e "${BLUE}=================================${NC}"
 
 # Check prerequisites
-if ! command -v ocm &> /dev/null; then
+if ! command -v ocm > /dev/null 2>&1; then
     echo -e "${RED}❌ OCM CLI not found. Please install it first.${NC}"
     exit 1
 fi
 
-if ! command -v docker &> /dev/null; then
+if ! command -v docker > /dev/null 2>&1; then
     echo -e "${RED}❌ Docker not found. Please install it first.${NC}"
     exit 1
 fi

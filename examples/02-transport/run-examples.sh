@@ -20,12 +20,12 @@ echo -e "${BLUE}==================================${NC}"
 # Check prerequisites
 echo -e "${YELLOW}🔍 Checking prerequisites...${NC}"
 
-if ! command -v ocm &> /dev/null; then
+if ! command -v ocm > /dev/null 2>&1; then
     echo -e "${RED}❌ OCM CLI not found. Please run ../scripts/setup-environment.sh${NC}"
     exit 1
 fi
 
-if ! command -v docker &> /dev/null; then
+if ! command -v docker > /dev/null 2>&1; then
     echo -e "${RED}❌ Docker not found. Please install Docker.${NC}"
     exit 1
 fi

@@ -197,26 +197,21 @@ install_flux_cli() {
 create_directories() {
     print_status "Creating project directories..."
     
-    local dirs=(
-        "examples/01-basic/hello-world"
-        "examples/01-basic/multi-resource"
-        "examples/02-transport/local-to-oci"
-        "examples/02-transport/cross-registry"
-        "examples/03-signing/basic-signing"
-        "examples/03-signing/verification"
-        "examples/04-k8s-deployment/simple-helm"
-        "examples/04-k8s-deployment/bootstrap"
-        "examples/05-advanced/component-references"
-        "examples/05-advanced/localization"
-        "infrastructure/registry"
-        "infrastructure/kind"
-        "docs"
-        "scripts/utils"
-    )
-    
-    for dir in "${dirs[@]}"; do
-        mkdir -p "$dir"
-    done
+    # Create directories one by one
+    mkdir -p "examples/01-basic/hello-world"
+    mkdir -p "examples/01-basic/multi-resource"
+    mkdir -p "examples/02-transport/local-to-oci"
+    mkdir -p "examples/02-transport/cross-registry"
+    mkdir -p "examples/03-signing/basic-signing"
+    mkdir -p "examples/03-signing/verification"
+    mkdir -p "examples/04-k8s-deployment/simple-helm"
+    mkdir -p "examples/04-k8s-deployment/bootstrap"
+    mkdir -p "examples/05-advanced/component-references"
+    mkdir -p "examples/05-advanced/localization"
+    mkdir -p "infrastructure/registry"
+    mkdir -p "infrastructure/kind"
+    mkdir -p "docs"
+    mkdir -p "scripts/utils"
     
     print_success "Created project directory structure"
 }

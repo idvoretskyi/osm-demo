@@ -26,7 +26,7 @@ wait_for_condition() {
     local attempt=1
     while [ $attempt -le $max_attempts ]; do
         echo "  Attempt $attempt/$max_attempts..."
-        if eval "$check_command" &>/dev/null; then
+        if eval "$check_command" > /dev/null 2>&1; then
             echo -e "${GREEN}✅ $description ready${NC}"
             return 0
         fi
@@ -107,17 +107,17 @@ echo -e "${BLUE}☸️  Setting up Kubernetes cluster for OCM demos${NC}"
 # Check prerequisites
 echo -e "${YELLOW}🔍 Checking prerequisites...${NC}"
 
-if ! command -v kind &> /dev/null; then
+if ! command -v kind > /dev/null 2>&1; then
     echo -e "${RED}❌ kind not found. Please install kind first.${NC}"
     exit 1
 fi
 
-if ! command -v kubectl &> /dev/null; then
+if ! command -v kubectl > /dev/null 2>&1; then
     echo -e "${RED}❌ kubectl not found. Please install kubectl first.${NC}"
     exit 1
 fi
 
-if ! command -v flux &> /dev/null; then
+if ! command -v flux > /dev/null 2>&1; then
     echo -e "${RED}❌ flux CLI not found. Please install flux CLI first.${NC}"
     exit 1
 fi
@@ -202,7 +202,7 @@ echo -e "${GREEN}✅ NGINX Ingress Controller installed and ready${NC}"
 echo -e "${YELLOW}🔄 Installing Flux...${NC}"
 
 # Check if Flux is already installed
-if kubectl get namespace flux-system &> /dev/null; then
+if kubectl get namespace flux-system > /dev/null 2>&1; then
     echo "Flux already installed, verifying health..."
     if ! wait_for_condition "existing Flux pods" 20 10 "kubectl wait --for=condition=Ready pods --all -n flux-system --timeout=30s"; then
         echo "Existing Flux installation unhealthy, reinstalling..."
@@ -213,7 +213,7 @@ if kubectl get namespace flux-system &> /dev/null; then
     fi
 fi
 
-if ! kubectl get namespace flux-system &> /dev/null; then
+if ! kubectl get namespace flux-system > /dev/null 2>&1; then
     if ! retry_with_backoff 3 15 "Flux installation" "flux install"; then
         echo -e "${RED}❌ Failed to install Flux${NC}"
         exit 1
@@ -387,7 +387,7 @@ echo "🏥 Cluster Health Check - $(date)"
 echo "=============================="
 
 # Check API server
-if kubectl version --short &>/dev/null; then
+if kubectl version --short > /dev/null 2>&1; then
     echo "✅ API Server: Connected"
 else
     echo "❌ API Server: Not accessible"
@@ -414,7 +414,7 @@ fi
 
 # Check critical namespaces
 for ns in ingress-nginx flux-system; do
-    if kubectl get namespace "$ns" &>/dev/null; then
+    if kubectl get namespace "$ns" > /dev/null 2>&1; then
         failing_pods=$(kubectl get pods -n "$ns" --field-selector=status.phase!=Running --no-headers | wc -l)
         if [ "$failing_pods" -eq 0 ]; then
             echo "✅ $ns: All pods running"

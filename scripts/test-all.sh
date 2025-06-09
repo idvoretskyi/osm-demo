@@ -228,17 +228,21 @@ run_test() {
 check_prerequisites() {
     log_info "Checking prerequisites..."
     
-    local missing_tools=()
+    local missing_tools=""
     
     # Check required tools
     for tool in docker kind kubectl ocm flux; do
-        if ! command -v "$tool" &> /dev/null; then
-            missing_tools+=("$tool")
+        if ! command -v "$tool" > /dev/null 2>&1; then
+            if [ -z "$missing_tools" ]; then
+                missing_tools="$tool"
+            else
+                missing_tools="$missing_tools $tool"
+            fi
         fi
     done
     
-    if [[ ${#missing_tools[@]} -gt 0 ]]; then
-        log_error "Missing required tools: ${missing_tools[*]}"
+    if [ -n "$missing_tools" ]; then
+        log_error "Missing required tools: $missing_tools"
         log_info "Run ./scripts/setup-environment.sh to install missing tools"
         return 1
     fi
@@ -320,7 +324,7 @@ test_k8s_examples() {
     log_info "Testing Kubernetes deployment examples..."
     
     # Check if Kind is available
-    if ! command -v kind &> /dev/null; then
+    if ! command -v kind > /dev/null 2>&1; then
         log_warning "Kind not available, skipping Kubernetes tests"
         return 0
     fi
@@ -339,7 +343,7 @@ test_k8s_examples() {
             # Clean up any existing cluster
             if kind get clusters 2>/dev/null | grep -q "ocm-demo"; then
                 log_info "Cleaning up existing cluster..."
-                kind delete cluster --name ocm-demo &>/dev/null || true
+                kind delete cluster --name ocm-demo > /dev/null 2>&1 || true
                 sleep 3
             fi
             
@@ -353,7 +357,7 @@ test_k8s_examples() {
                 
                 # Basic verification - cluster exists and kubectl works
                 if kind get clusters 2>/dev/null | grep -q "ocm-demo" && \
-                   kubectl cluster-info --request-timeout=10s &>/dev/null; then
+                   kubectl cluster-info --request-timeout=10s > /dev/null 2>&1; then
                     log_success "Cluster is accessible and ready"
                     return 0
                 else
@@ -426,7 +430,7 @@ print_summary() {
     echo -e "   Main log: $TEST_LOG"
     echo -e "   Temp logs: /tmp/ocm-test-*.log"
     
-    if command -v docker &> /dev/null; then
+    if command -v docker > /dev/null 2>&1; then
         local containers_count
         containers_count=$(docker ps -q | wc -l | tr -d ' ')
         echo -e "   Running containers: $containers_count"

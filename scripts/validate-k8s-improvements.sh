@@ -79,7 +79,7 @@ fi
 
 # Test 6: Test with verify-only flag (if cluster tools available)
 echo -e "${YELLOW}Test 6: Verify-Only Mode${NC}"
-if command -v kind &> /dev/null && command -v kubectl &> /dev/null; then
+if command -v kind > /dev/null 2>&1 && command -v kubectl > /dev/null 2>&1; then
     cd "$PROJECT_ROOT"
     if ./examples/04-k8s-deployment/ocm-k8s-toolkit/deploy-example.sh --help | grep -q "verify-only"; then
         echo -e "${GREEN}✅ Verify-only mode available${NC}"

@@ -202,7 +202,7 @@ test_utility_scripts() {
     fi
     
     # Test that ocm-utils.sh help works
-    if "$PROJECT_ROOT/scripts/ocm-utils.sh" --help &>/dev/null; then
+    if "$PROJECT_ROOT/scripts/ocm-utils.sh" --help > /dev/null 2>&1; then
         run_test "OCM utils help command works" "0"
     else
         run_test "OCM utils help command works" "1"
