@@ -4,29 +4,15 @@ set -euo pipefail
 # OCM Demo Playground - Quick Demo
 # This script runs a curated selection of examples to showcase OCM capabilities
 
-# Color definitions
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly PURPLE='\033[0;35m'
-readonly CYAN='\033[0;36m'
-readonly NC='\033[0m'
-
 # Configuration
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly DEMO_DURATION=300  # 5 minutes for quick demo
 
-# Helper functions
-log_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
-}
+# Source common functions
+source "$SCRIPT_DIR/common.sh"
 
-log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
-}
-
+# Legacy function wrapper for compatibility
 log_warning() {
     echo -e "${YELLOW}⚠️  $1${NC}"
 }

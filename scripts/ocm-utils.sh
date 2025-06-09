@@ -3,7 +3,7 @@
 # Utility script for common OCM operations
 # Provides convenient commands for managing OCM components and environments
 
-set -e
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'

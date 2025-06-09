@@ -9,6 +9,12 @@ on:
     # Run tests daily at 2 AM UTC
     - cron: '0 2 * * *'
 
+env:
+  KIND_VERSION: v0.24.0
+  KUBECTL_VERSION: v1.31.0
+  FLUX_VERSION: v2.4.0
+  OCM_VERSION: v0.18.0
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -25,20 +31,34 @@ jobs:
     - name: Set up Docker
       uses: docker/setup-buildx-action@v3
       
-    - name: Install dependencies
+    - name: Verify Docker service
       run: |
-        # Install kind
-        curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.29.0/kind-linux-amd64
+        docker --version
+        docker info
+        
+    - name: Install kind
+      run: |
+        curl -Lo ./kind https://kind.sigs.k8s.io/dl/${{ env.KIND_VERSION }}/kind-linux-amd64
         chmod +x ./kind
         sudo mv ./kind /usr/local/bin/kind
+        kind --version
         
-        # Install kubectl
-        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    - name: Install kubectl
+      run: |
+        curl -LO "https://dl.k8s.io/release/${{ env.KUBECTL_VERSION }}/bin/linux/amd64/kubectl"
         chmod +x kubectl
         sudo mv kubectl /usr/local/bin/kubectl
+        kubectl version --client
         
-        # Install Flux
+    - name: Install Flux
+      run: |
         curl -s https://fluxcd.io/install.sh | sudo bash
+        flux --version
+        
+    - name: Install OCM CLI
+      run: |
+        curl -sSfL https://ocm.software/install.sh | sudo sh -s ${{ env.OCM_VERSION }}
+        ocm version
         
     - name: Fix script permissions
       run: |
@@ -68,6 +88,23 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Verify Docker service
+      run: |
+        docker --version
+        docker info
+        
+    - name: Install OCM CLI
+      run: |
+        curl -sSfL https://ocm.software/install.sh | sudo sh -s ${{ env.OCM_VERSION }}
+        ocm version
+        
+    - name: Fix script permissions
+      run: |
+        find . -name "*.sh" -type f -exec chmod +x {} \;
+        
     - name: Set up environment
       run: |
         ./scripts/setup-environment.sh

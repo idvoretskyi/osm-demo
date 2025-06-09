@@ -3,10 +3,18 @@
 # OCM K8s Toolkit Deployment Example
 # Demonstrates deploying OCM components to Kubernetes using OCM K8s integration
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK_DIR="$SCRIPT_DIR/work"
+
+# Load enhanced reconnection functions
+if [ -f "$SCRIPT_DIR/k8s-reconnection-functions.sh" ]; then
+    source "$SCRIPT_DIR/k8s-reconnection-functions.sh"
+    echo -e "${GREEN}✅ Enhanced reconnection functions loaded${NC}"
+else
+    echo -e "${YELLOW}⚠️  Enhanced reconnection functions not found, using basic retry logic${NC}"
+fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -537,61 +545,6 @@ if [[ -n "${CI:-}" || -n "${GITHUB_ACTIONS:-}" || -n "${GITHUB_WORKFLOW:-}" ]]; 
     fi
     echo "✅ CI environment stability verified"
 fi
-
-# Enhanced cluster readiness check for CI environments
-check_cluster_ready() {
-    echo "🔍 Checking kubectl configuration..."
-    
-    # Check kubectl config
-    if ! kubectl config current-context &> /dev/null; then
-        echo -e "${RED}❌ No kubectl context available${NC}"
-        echo "Available contexts:"
-        kubectl config get-contexts || echo "No contexts found"
-        return 1
-    fi
-    
-    local current_context
-    current_context=$(kubectl config current-context)
-    echo "✅ Using kubectl context: $current_context"
-    
-    # Check cluster info
-    echo "🔍 Checking cluster connectivity..."
-    if ! kubectl cluster-info &> /dev/null; then
-        echo -e "${RED}❌ Kubernetes cluster not accessible${NC}"
-        echo "Cluster info output:"
-        kubectl cluster-info 2>&1 || echo "Failed to get cluster info"
-        return 1
-    fi
-    
-    echo "✅ Cluster is accessible"
-    
-    # Check node readiness
-    echo "🔍 Checking node readiness..."
-    local ready_nodes
-    ready_nodes=$(kubectl get nodes --no-headers 2>/dev/null | grep -c " Ready " || echo "0")
-    
-    if [[ $ready_nodes -eq 0 ]]; then
-        echo -e "${RED}❌ No ready nodes found${NC}"
-        echo "Node status:"
-        kubectl get nodes --no-headers 2>&1 || echo "Failed to get nodes"
-        return 1
-    fi
-    
-    echo "✅ Found $ready_nodes ready node(s)"
-    
-    # Check system pods
-    echo "🔍 Checking system pods..."
-    local running_pods
-    running_pods=$(kubectl get pods -n kube-system --no-headers 2>/dev/null | grep -c " Running " || echo "0")
-    
-    if [[ $running_pods -eq 0 ]]; then
-        echo -e "${YELLOW}⚠️  No running system pods found (this might be okay)${NC}"
-    else
-        echo "✅ Found $running_pods running system pod(s)"
-    fi
-    
-    return 0
-}
 
 if ! check_cluster_ready; then
     echo -e "${RED}❌ Kubernetes cluster not accessible.${NC}"

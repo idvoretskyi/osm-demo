@@ -12,6 +12,12 @@ readonly PURPLE='\033[0;35m'
 readonly CYAN='\033[0;36m'
 readonly NC='\033[0m' # No Color
 
+# Default configuration variables
+readonly DEFAULT_REGISTRY_PORT="${OCM_DEMO_REGISTRY_PORT:-5001}"
+readonly DEFAULT_CLUSTER_NAME="${OCM_DEMO_CLUSTER_NAME:-ocm-demo}"
+readonly DEFAULT_NAMESPACE="${OCM_DEMO_NAMESPACE:-ocm-demos}"
+readonly DEFAULT_REGISTRY_NAME="${OCM_DEMO_REGISTRY_NAME:-local-registry}"
+
 # Logging functions
 log_info() {
     echo -e "${BLUE}ℹ️  $1${NC}"
