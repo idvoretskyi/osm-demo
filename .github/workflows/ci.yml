@@ -76,4 +76,7 @@ jobs:
     - name: Run quick demo
       timeout-minutes: 10
       run: |
-        bash ./scripts/quick-demo.sh --non-interactive || echo "Demo completed with expected exit"
+        if ! bash ./scripts/quick-demo.sh --non-interactive; then
+          echo "❌ Demo script failed. Please investigate the issue."
+          exit 1
+        fi
