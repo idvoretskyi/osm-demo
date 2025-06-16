@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  OCM_VERSION: v0.25.0
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -19,21 +16,8 @@ jobs:
       
     - name: Install OCM CLI
       run: |
-        export OCM_VERSION="${{ env.OCM_VERSION }}"
-        echo "Installing OCM CLI version: ${OCM_VERSION}"
-        
-        # Manual installation of Open Component Model CLI
-        OCM_ARCH="linux-amd64"
-        OCM_URL="https://github.com/open-component-model/ocm/releases/download/${OCM_VERSION}/ocm-${OCM_VERSION}-${OCM_ARCH}.tar.gz"
-        
-        echo "Downloading OCM from: ${OCM_URL}"
-        curl -sSfL "${OCM_URL}" -o /tmp/ocm.tar.gz
-        
-        # Extract and install
-        cd /tmp
-        tar -xzf ocm.tar.gz
-        sudo mv ocm /usr/local/bin/ocm
-        sudo chmod +x /usr/local/bin/ocm
+        echo "Installing latest OCM CLI..."
+        curl -s https://ocm.software/install.sh | sudo bash
         
         # Add to PATH
         echo "/usr/local/bin" >> $GITHUB_PATH
@@ -74,21 +58,8 @@ jobs:
       
     - name: Install OCM CLI
       run: |
-        export OCM_VERSION="${{ env.OCM_VERSION }}"
-        echo "Installing OCM CLI version: ${OCM_VERSION}"
-        
-        # Manual installation of Open Component Model CLI
-        OCM_ARCH="linux-amd64"
-        OCM_URL="https://github.com/open-component-model/ocm/releases/download/${OCM_VERSION}/ocm-${OCM_VERSION}-${OCM_ARCH}.tar.gz"
-        
-        echo "Downloading OCM from: ${OCM_URL}"
-        curl -sSfL "${OCM_URL}" -o /tmp/ocm.tar.gz
-        
-        # Extract and install
-        cd /tmp
-        tar -xzf ocm.tar.gz
-        sudo mv ocm /usr/local/bin/ocm
-        sudo chmod +x /usr/local/bin/ocm
+        echo "Installing latest OCM CLI..."
+        curl -s https://ocm.software/install.sh | sudo bash
         
         # Add to PATH
         echo "/usr/local/bin" >> $GITHUB_PATH
