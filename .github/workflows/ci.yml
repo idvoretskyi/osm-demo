@@ -19,7 +19,8 @@ jobs:
       
     - name: Install OCM CLI
       run: |
-        curl -sSfL https://ocm.software/install.sh | sudo sh -s ${{ env.OCM_VERSION }}
+        export OCM_VERSION="${{ env.OCM_VERSION }}"
+        curl -sSfL https://ocm.software/install.sh | sudo bash -s "${OCM_VERSION}"
         ocm version
         
     - name: Fix script permissions
@@ -53,7 +54,8 @@ jobs:
       
     - name: Install OCM CLI
       run: |
-        curl -sSfL https://ocm.software/install.sh | sudo sh -s ${{ env.OCM_VERSION }}
+        export OCM_VERSION="${{ env.OCM_VERSION }}"
+        curl -sSfL https://ocm.software/install.sh | sudo bash -s "${OCM_VERSION}"
         ocm version
         
     - name: Fix script permissions
@@ -63,4 +65,4 @@ jobs:
     - name: Run quick demo
       timeout-minutes: 10
       run: |
-        ./scripts/quick-demo.sh --non-interactive || echo "Demo completed with expected exit"
+        bash ./scripts/quick-demo.sh --non-interactive || echo "Demo completed with expected exit"
