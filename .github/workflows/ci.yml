@@ -21,6 +21,8 @@ jobs:
       run: |
         export OCM_VERSION="${{ env.OCM_VERSION }}"
         curl -sSfL https://ocm.software/install.sh | sudo bash -s "${OCM_VERSION}"
+        echo "/usr/local/bin" >> $GITHUB_PATH
+        export PATH="$PATH:/usr/local/bin"
         ocm version
         
     - name: Fix script permissions
@@ -56,6 +58,8 @@ jobs:
       run: |
         export OCM_VERSION="${{ env.OCM_VERSION }}"
         curl -sSfL https://ocm.software/install.sh | sudo bash -s "${OCM_VERSION}"
+        echo "/usr/local/bin" >> $GITHUB_PATH
+        export PATH="$PATH:/usr/local/bin"
         ocm version
         
     - name: Fix script permissions
