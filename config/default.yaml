@@ -1,0 +1,23 @@
+# OCM Demo Configuration
+
+# Registry Configuration
+registry:
+  port: 5001
+  name: "local-registry"
+  host: "localhost"
+
+# Kubernetes Configuration  
+kubernetes:
+  cluster_name: "ocm-demo"
+  namespace: "ocm-demos"
+  
+# Demo Configuration
+demo:
+  interactive: true
+  
+# Environment Variables
+environment:
+  OCM_DEMO_REGISTRY_PORT: 5001
+  OCM_DEMO_CLUSTER_NAME: "ocm-demo"
+  OCM_DEMO_NAMESPACE: "ocm-demos"
+  OCM_DEMO_REGISTRY_NAME: "local-registry"

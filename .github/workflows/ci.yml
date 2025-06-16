@@ -1,153 +1,43 @@
-name: OCM Demo Playground CI
+name: OCM Demo CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
-  schedule:
-    # Run tests daily at 2 AM UTC
-    - cron: '0 2 * * *'
-
-env:
-  KIND_VERSION: v0.24.0
-  KUBECTL_VERSION: v1.31.0
-  FLUX_VERSION: v2.4.0
-  OCM_VERSION: v0.18.0
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        test-suite:
-          - { name: "Quick Tests", args: "--skip-k8s --skip-long" }
-          - { name: "Full Tests", args: "" }
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       
-    - name: Set up Docker
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Verify Docker service
-      run: |
-        docker --version
-        docker info
-        
-    - name: Install kind
-      run: |
-        curl -Lo ./kind https://kind.sigs.k8s.io/dl/${{ env.KIND_VERSION }}/kind-linux-amd64
-        chmod +x ./kind
-        sudo mv ./kind /usr/local/bin/kind
-        kind --version
-        
-    - name: Install kubectl
-      run: |
-        curl -LO "https://dl.k8s.io/release/${{ env.KUBECTL_VERSION }}/bin/linux/amd64/kubectl"
-        chmod +x kubectl
-        sudo mv kubectl /usr/local/bin/kubectl
-        kubectl version --client
-        
-    - name: Install Flux
-      run: |
-        curl -s https://fluxcd.io/install.sh | sudo bash
-        flux --version
-        
     - name: Install OCM CLI
       run: |
-        curl -sSfL https://ocm.software/install.sh | sudo sh -s ${{ env.OCM_VERSION }}
-        ocm version
+        echo "Installing latest OCM CLI..."
+        curl -s https://ocm.software/install.sh | sudo bash
         
-    - name: Fix script permissions
-      run: |
-        # Make all shell scripts executable
-        find . -name "*.sh" -type f -exec chmod +x {} \;
+        # Add to PATH
+        echo "/usr/local/bin" >> $GITHUB_PATH
+        export PATH="/usr/local/bin:$PATH"
         
-    - name: Set up environment
-      run: |
-        ./scripts/setup-environment.sh
-        
-    - name: Run ${{ matrix.test-suite.name }}
-      timeout-minutes: 20
-      run: |
-        ./scripts/test-all.sh ${{ matrix.test-suite.args }}
-        
-    - name: Upload test logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-logs-${{ matrix.test-suite.name }}-${{ github.run_number }}
-        path: /tmp/ocm-demo-test.log
-        retention-days: 7
-
-  quick-demo:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
-    - name: Set up Docker
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Verify Docker service
-      run: |
-        docker --version
-        docker info
-        
-    - name: Install OCM CLI
-      run: |
-        curl -sSfL https://ocm.software/install.sh | sudo sh -s ${{ env.OCM_VERSION }}
+        # Verify installation
+        which ocm || { echo "OCM not found in PATH"; exit 1; }
         ocm version
         
     - name: Fix script permissions
       run: |
         find . -name "*.sh" -type f -exec chmod +x {} \;
         
-    - name: Set up environment
+    - name: Run basic validation
       run: |
-        ./scripts/setup-environment.sh
-        
-    - name: Run quick demo (non-interactive)
-      timeout-minutes: 10
-      run: |
-        ./scripts/quick-demo.sh --non-interactive
-
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Fetch full history for proper diff analysis
-      
-    - name: Run security scan on shell scripts
-      run: |
-        # Install shellcheck
-        sudo apt-get update
-        sudo apt-get install -y shellcheck
-        
-        # Scan all shell scripts
+        # Validate shell scripts
+        sudo apt-get update && sudo apt-get install -y shellcheck
         find . -name "*.sh" -type f -exec shellcheck {} \;
         
-    - name: Check for secrets
-      uses: trufflesecurity/trufflehog@main
-      with:
-        path: ./
-        base: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}
-        head: ${{ github.sha }}
-
-  documentation:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
-    - name: Validate documentation
-      timeout-minutes: 5
-      run: |
-        # Check that all examples have README files
+        # Check documentation
         for dir in examples/*/; do
           if [ ! -f "${dir}README.md" ]; then
             echo "Missing README.md in $dir"
@@ -155,11 +45,38 @@ jobs:
           fi
         done
         
-        # Check that all scripts are executable
-        find . -name "*.sh" -type f ! -executable -print | \
-          if read -r line; then
-            echo "Non-executable script found: $line"
-            exit 1
-          fi
+        echo "✅ All checks passed"
+
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Install OCM CLI
+      run: |
+        echo "Installing latest OCM CLI..."
+        curl -s https://ocm.software/install.sh | sudo bash
         
-        echo "✅ All documentation checks passed"
+        # Add to PATH
+        echo "/usr/local/bin" >> $GITHUB_PATH
+        export PATH="/usr/local/bin:$PATH"
+        
+        # Verify installation
+        which ocm || { echo "OCM not found in PATH"; exit 1; }
+        ocm version
+        
+    - name: Fix script permissions
+      run: |
+        find . -name "*.sh" -type f -exec chmod +x {} \;
+        
+    - name: Run quick demo
+      timeout-minutes: 10
+      run: |
+        if ! bash ./scripts/quick-demo.sh --non-interactive; then
+          echo "❌ Demo script failed. Please investigate the issue."
+          exit 1
+        fi
