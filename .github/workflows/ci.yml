@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  OCM_VERSION: v0.18.0
+  OCM_VERSION: v0.25.0
 
 jobs:
   test:
@@ -20,9 +20,27 @@ jobs:
     - name: Install OCM CLI
       run: |
         export OCM_VERSION="${{ env.OCM_VERSION }}"
-        curl -sSfL https://ocm.software/install.sh | sudo bash -s "${OCM_VERSION}"
+        echo "Installing OCM CLI version: ${OCM_VERSION}"
+        
+        # Manual installation of Open Component Model CLI
+        OCM_ARCH="linux-amd64"
+        OCM_URL="https://github.com/open-component-model/ocm/releases/download/${OCM_VERSION}/ocm-${OCM_VERSION}-${OCM_ARCH}.tar.gz"
+        
+        echo "Downloading OCM from: ${OCM_URL}"
+        curl -sSfL "${OCM_URL}" -o /tmp/ocm.tar.gz
+        
+        # Extract and install
+        cd /tmp
+        tar -xzf ocm.tar.gz
+        sudo mv ocm /usr/local/bin/ocm
+        sudo chmod +x /usr/local/bin/ocm
+        
+        # Add to PATH
         echo "/usr/local/bin" >> $GITHUB_PATH
-        export PATH="$PATH:/usr/local/bin"
+        export PATH="/usr/local/bin:$PATH"
+        
+        # Verify installation
+        which ocm || { echo "OCM not found in PATH"; exit 1; }
         ocm version
         
     - name: Fix script permissions
@@ -57,9 +75,27 @@ jobs:
     - name: Install OCM CLI
       run: |
         export OCM_VERSION="${{ env.OCM_VERSION }}"
-        curl -sSfL https://ocm.software/install.sh | sudo bash -s "${OCM_VERSION}"
+        echo "Installing OCM CLI version: ${OCM_VERSION}"
+        
+        # Manual installation of Open Component Model CLI
+        OCM_ARCH="linux-amd64"
+        OCM_URL="https://github.com/open-component-model/ocm/releases/download/${OCM_VERSION}/ocm-${OCM_VERSION}-${OCM_ARCH}.tar.gz"
+        
+        echo "Downloading OCM from: ${OCM_URL}"
+        curl -sSfL "${OCM_URL}" -o /tmp/ocm.tar.gz
+        
+        # Extract and install
+        cd /tmp
+        tar -xzf ocm.tar.gz
+        sudo mv ocm /usr/local/bin/ocm
+        sudo chmod +x /usr/local/bin/ocm
+        
+        # Add to PATH
         echo "/usr/local/bin" >> $GITHUB_PATH
-        export PATH="$PATH:/usr/local/bin"
+        export PATH="/usr/local/bin:$PATH"
+        
+        # Verify installation
+        which ocm || { echo "OCM not found in PATH"; exit 1; }
         ocm version
         
     - name: Fix script permissions
