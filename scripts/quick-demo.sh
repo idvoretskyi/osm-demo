@@ -9,39 +9,22 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly DEMO_DURATION=300  # 5 minutes for quick demo
 
-# Source common functions
+# Source common functions (now includes all needed libraries)
 source "$SCRIPT_DIR/common.sh"
 
-# Legacy function wrapper for compatibility
-log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
-}
-
-log_error() {
-    echo -e "${RED}❌ $1${NC}"
-}
-
-log_demo() {
-    echo -e "${PURPLE}🎬 $1${NC}"
-}
-
-log_step() {
-    echo -e "${CYAN}🔹 $1${NC}"
-}
-
 print_header() {
-    echo -e "${BLUE}"
+    echo -e "${COLOR_INFO}"
     echo "╔══════════════════════════════════════════════════════════════════════════════╗"
     echo "║                           OCM Demo Playground                               ║"
     echo "║                             Quick Demo Tour                                 ║"
     echo "║                                                                              ║"
     echo "║  This 5-minute demo showcases the key features of the Open Component Model  ║"
     echo "╚══════════════════════════════════════════════════════════════════════════════╝"
-    echo -e "${NC}"
+    echo -e "${COLOR_RESET}"
 }
 
 print_footer() {
-    echo -e "${GREEN}"
+    echo -e "${COLOR_SUCCESS}"
     echo "╔══════════════════════════════════════════════════════════════════════════════╗"
     echo "║                               Demo Complete!                                ║"
     echo "║                                                                              ║"
@@ -53,11 +36,11 @@ print_footer() {
     echo "║  • Read the docs: README.md and docs/                                       ║"
     echo "║  • Join the OCM community: https://github.com/open-component-model/        ║"
     echo "╚══════════════════════════════════════════════════════════════════════════════╝"
-    echo -e "${NC}"
+    echo -e "${COLOR_RESET}"
 }
 
 wait_for_user() {
-    echo -e "${YELLOW}⏳ Press Enter to continue to the next step...${NC}"
+    echo -e "${COLOR_WARNING}⏳ Press Enter to continue to the next step...${COLOR_RESET}"
     read -r
 }
 

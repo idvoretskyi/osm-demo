@@ -3,14 +3,13 @@
 # Common functions for OCM Demo Playground scripts
 # Source this file in other scripts: source "$(dirname "$0")/common.sh"
 
-# Color definitions
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly PURPLE='\033[0;35m'
-readonly CYAN='\033[0;36m'
-readonly NC='\033[0m' # No Color
+# Get the directory of this script for sourcing libraries
+readonly COMMON_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source modular libraries
+source "$COMMON_LIB_DIR/lib/colors.sh"
+source "$COMMON_LIB_DIR/lib/logging.sh"
+source "$COMMON_LIB_DIR/lib/registry.sh"
 
 # Default configuration variables
 readonly DEFAULT_REGISTRY_PORT="${OCM_DEMO_REGISTRY_PORT:-5001}"
@@ -18,32 +17,9 @@ readonly DEFAULT_CLUSTER_NAME="${OCM_DEMO_CLUSTER_NAME:-ocm-demo}"
 readonly DEFAULT_NAMESPACE="${OCM_DEMO_NAMESPACE:-ocm-demos}"
 readonly DEFAULT_REGISTRY_NAME="${OCM_DEMO_REGISTRY_NAME:-local-registry}"
 
-# Logging functions
-log_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
-}
-
-log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
-}
-
-log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
-}
-
-log_error() {
-    echo -e "${RED}❌ ERROR: $1${NC}" >&2
-    if [[ -n "${2:-}" ]]; then
-        echo -e "${YELLOW}💡 HINT: $2${NC}" >&2
-    fi
-}
-
-log_step() {
-    echo -e "${CYAN}🔹 $1${NC}"
-}
-
+# Enhanced logging function for demos
 log_demo() {
-    echo -e "${PURPLE}🎬 $1${NC}"
+    echo -e "${COLOR_HEADER}🎬 $1${COLOR_RESET}"
 }
 
 # Check if command exists
@@ -75,119 +51,7 @@ check_docker() {
     return 0
 }
 
-# Registry management functions
-start_registry() {
-    local port="${1:-5001}"
-    local name="${2:-local-registry}"
-    
-    log_info "Starting registry on port $port..."
-    
-    # Check if already running
-    if docker ps --format '{{.Names}}' | grep -q "^${name}$"; then
-        log_success "Registry already running"
-        return 0
-    fi
-    
-    # Clean up any existing containers on the port
-    cleanup_registry_port "$port"
-    
-    # Remove existing container with same name
-    docker rm -f "$name" 2>/dev/null || true
-    
-    # Start new registry
-    if docker run -d -p "${port}:5000" --name "$name" registry:2; then
-        log_info "Waiting for registry to be ready..."
-        
-        # Wait for registry to be ready
-        for i in {1..30}; do
-            if curl -f -s -m 5 "http://localhost:${port}/v2/" >/dev/null 2>&1; then
-                log_success "Registry ready on localhost:${port}"
-                return 0
-            fi
-            
-            if [[ $i -eq 30 ]]; then
-                log_error "Registry failed to start within 30 seconds"
-                docker logs "$name" || true
-                return 1
-            fi
-            sleep 1
-        done
-    else
-        log_error "Failed to start registry container"
-        return 1
-    fi
-}
-
-# Clean up containers using a specific port
-cleanup_registry_port() {
-    local port="$1"
-    
-    log_info "Cleaning up containers on port $port..."
-    
-    # Stop and remove containers using the port
-    docker ps --filter "publish=${port}" --format "{{.Names}}" 2>/dev/null | \
-        xargs -r docker stop 2>/dev/null || true
-    docker ps -a --filter "publish=${port}" --format "{{.Names}}" 2>/dev/null | \
-        xargs -r docker rm 2>/dev/null || true
-}
-
-# Clean up all registry containers
-cleanup_all_registries() {
-    log_info "Cleaning up all registry containers..."
-    
-    # Common registry names
-    local registry_names="registry local-registry source-registry target-registry source-env-registry target-env-registry demo-registry"
-    
-    for name in $registry_names; do
-        docker rm -f "$name" 2>/dev/null || true
-    done
-    
-    # Clean up registry containers by image
-    docker ps -a --filter "ancestor=registry:2" --format "{{.Names}}" 2>/dev/null | \
-        xargs -r docker rm -f 2>/dev/null || true
-    
-    # Clean up common ports
-    for port in 5001 5002 5003 5004; do
-        cleanup_registry_port "$port"
-    done
-    
-    log_success "Registry cleanup complete"
-}
-
-# Test registry connectivity
-test_registry() {
-    local url="$1"
-    local timeout="${2:-5}"
-    
-    if curl -f -s -m "$timeout" "${url}/v2/" >/dev/null 2>&1; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Wait for registry to be ready
-wait_for_registry() {
-    local url="$1"
-    local timeout="${2:-30}"
-    
-    log_info "Waiting for registry at $url to be ready..."
-    
-    for i in $(seq 1 "$timeout"); do
-        if test_registry "$url"; then
-            log_success "Registry at $url is ready"
-            return 0
-        fi
-        
-        if [[ $((i % 5)) -eq 0 ]]; then
-            log_info "Still waiting... ($i/$timeout seconds)"
-        fi
-        sleep 1
-    done
-    
-    log_error "Registry at $url failed to become ready within $timeout seconds"
-    return 1
-}
+# Registry functions are now provided by lib/registry.sh
 
 # Create and clean work directory
 setup_work_dir() {
@@ -197,7 +61,7 @@ setup_work_dir() {
     
     rm -rf "$work_dir"
     mkdir -p "$work_dir"
-    cd "$work_dir"
+    cd "$work_dir" || { log_error "Failed to change to work directory: $work_dir"; return 1; }
     
     log_success "Work directory ready"
 }
@@ -298,10 +162,10 @@ check_prerequisites() {
 
 # Print help for troubleshooting
 show_troubleshooting_help() {
-    echo -e "${BLUE}🔧 Troubleshooting Help${NC}"
+    echo -e "${COLOR_INFO}🔧 Troubleshooting Help${COLOR_RESET}"
     echo "======================"
     echo ""
-    echo -e "${YELLOW}Common issues and solutions:${NC}"
+    echo -e "${COLOR_WARNING}Common issues and solutions:${COLOR_RESET}"
     echo ""
     echo "1. OCM CLI not found:"
     echo "   - Run: ./scripts/setup-environment.sh"
@@ -318,5 +182,5 @@ show_troubleshooting_help() {
     echo "4. Permission issues:"
     echo "   - Fix: chmod +x script-name.sh"
     echo ""
-    echo -e "${BLUE}For more help, see: docs/troubleshooting.md${NC}"
+    echo -e "${COLOR_INFO}For more help, see: docs/troubleshooting.md${COLOR_RESET}"
 }
