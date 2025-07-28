@@ -1,6 +1,6 @@
 #!/bin/bash
 # Debug script for Kubernetes context issues in CI
-set -e
+set -euo pipefail
 
 echo "=== Kubernetes Context Debug Information ==="
 echo "Date: $(date)"

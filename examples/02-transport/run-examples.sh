@@ -3,7 +3,7 @@
 # Run all transport examples
 # This script executes all examples in the 02-transport section
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

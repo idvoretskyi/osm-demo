@@ -3,7 +3,7 @@
 # Setup Kubernetes cluster for OCM demos
 # Creates a kind cluster with necessary components for OCM K8s integration
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

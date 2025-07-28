@@ -3,7 +3,7 @@
 # K8s Cluster Verification Script
 # This script verifies that a Kubernetes cluster is properly set up and accessible
 
-set -e
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'

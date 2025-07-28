@@ -3,7 +3,7 @@
 # OCM Local to OCI Transport Example
 # Demonstrates transporting components from local archives to OCI registries
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK_DIR="$SCRIPT_DIR/work"

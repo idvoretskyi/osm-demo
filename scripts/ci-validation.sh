@@ -3,7 +3,7 @@
 # CI validation script to check for common issues
 # This script ensures all prerequisites are met before running tests
 
-set -e
+set -euo pipefail
 
 echo "🔍 Running CI validation checks..."
 

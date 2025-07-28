@@ -3,7 +3,7 @@
 # OCM Offline Transport Example
 # Demonstrates air-gapped transport using Common Transport Format
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK_DIR="$SCRIPT_DIR/work"

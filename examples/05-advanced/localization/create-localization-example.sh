@@ -3,7 +3,7 @@
 # OCM Resource Localization Example
 # Demonstrates customizing components for different environments
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK_DIR="$SCRIPT_DIR/work"

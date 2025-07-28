@@ -21,7 +21,8 @@ help:
 	@echo "  examples  - Run all example scenarios"
 	@echo ""
 	@echo "🧹 Cleanup:"
-	@echo "  clean     - Clean up demo environment"
+	@echo "  clean       - Complete cleanup of all resources"
+	@echo "  clean-quick - Quick cleanup of demo artifacts only"
 	@echo ""
 
 # Set up the demo environment
@@ -66,4 +67,9 @@ examples:
 # Clean up demo environment
 clean:
 	@echo "Cleaning up demo environment..."
-	@./scripts/test-all.sh cleanup
+	@./scripts/cleanup-all.sh
+
+# Quick cleanup of demo artifacts
+clean-quick:
+	@echo "Quick cleanup of demo artifacts..."
+	@./scripts/ocm-utils.sh cleanup

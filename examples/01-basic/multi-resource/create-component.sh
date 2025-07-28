@@ -3,7 +3,7 @@
 # Create OCM Component with Multiple Resources
 # Demonstrates packaging different types of resources in a single component
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK_DIR="$SCRIPT_DIR/work"
@@ -43,7 +43,7 @@ EOF
 # Deployment script
 cat > scripts/deploy.sh << 'EOF'
 #!/bin/bash
-set -e
+set -euo pipefail
 
 echo "Deploying MyApp v1.0.0..."
 kubectl apply -f ../config/app.yaml

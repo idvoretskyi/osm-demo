@@ -3,7 +3,7 @@
 # OCM Component Signing Example
 # Demonstrates signing OCM components with digital signatures
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK_DIR="$SCRIPT_DIR/work"

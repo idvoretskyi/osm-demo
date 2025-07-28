@@ -3,7 +3,7 @@
 # Run all signing OCM examples
 # This script executes all examples in the 03-signing section
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

@@ -25,7 +25,8 @@ show_help() {
     echo "  demo            - Run quick 5-minute demo tour"
     echo "  summary         - Show project overview and capabilities"
     echo "  registry        - Manage local OCI registry"
-    echo "  cleanup         - Clean up demo artifacts"
+    echo "  cleanup         - Quick cleanup of demo artifacts"
+    echo "  cleanup-all     - Comprehensive cleanup of all resources"
     echo "  status          - Show environment status"
     echo "  run-all         - Run all examples in sequence"
     echo "  test-all        - Run comprehensive test suite"
@@ -226,17 +227,20 @@ run_all_examples() {
 
 cleanup_demo() {
     echo -e "${YELLOW}🧹 Cleaning up OCM demo environment...${NC}"
+    echo "For comprehensive cleanup, use the dedicated cleanup script:"
+    echo ""
+    echo -e "${BLUE}  ./scripts/cleanup-all.sh${NC}           # Interactive cleanup of all resources"
+    echo -e "${BLUE}  ./scripts/cleanup-all.sh --docker-only${NC}  # Clean only Docker resources"
+    echo -e "${BLUE}  ./scripts/cleanup-all.sh --force${NC}        # Skip confirmation prompts"
+    echo ""
     
-    # Stop and remove containers
-    echo "Stopping containers..."
+    # Quick cleanup for basic demo artifacts
+    echo "Performing quick cleanup of demo containers..."
     docker stop local-registry demo-registry registry source-registry target-registry source-env-registry target-env-registry 2>/dev/null || true
     docker rm local-registry demo-registry registry source-registry target-registry source-env-registry target-env-registry 2>/dev/null || true
     
-    # Delete kind cluster
-    if kind get clusters | grep -q ocm-demo; then
-        echo "Deleting kind cluster..."
-        kind delete cluster --name ocm-demo
-    fi
+    echo -e "${GREEN}✅ Quick cleanup completed${NC}"
+    echo -e "${YELLOW}💡 For complete cleanup, run: ./scripts/cleanup-all.sh${NC}"
     
     # Clean up work directories
     echo "Cleaning up work directories..."
@@ -310,6 +314,10 @@ case "${1:-}" in
         ;;
     "cleanup")
         cleanup_demo
+        ;;
+    "cleanup-all")
+        shift
+        "$SCRIPT_DIR/cleanup-all.sh" "$@"
         ;;
     "help"|"-h"|"--help")
         show_help

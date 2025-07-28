@@ -3,7 +3,7 @@
 # Create OCM Hello World Component
 # This script demonstrates creating a basic OCM component with a simple text resource
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK_DIR="$SCRIPT_DIR/work"
